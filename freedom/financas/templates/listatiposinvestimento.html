@@ -1,0 +1,16 @@
+<table>
+<thead>
+    <tr>
+        <th>DESCRICAO_ABR</th>
+        <th>DESCRICAO</th>
+    </tr>
+</thead>
+<tbody>
+    {% for tipo in tipos %}
+        <tr>
+            <td>{{ tipo.descricao_abr }}</td>
+            <td>{{ tipo.descricao }}</td>
+        </tr>
+    {% endfor %}
+</tbody>
+</table>
