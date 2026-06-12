@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Check, X, Trophy, Clock, ChevronDown, Chevro
 import type { ActiveWorkout, SetLog } from '../types/workout'
 import { useRestTimer } from '../hooks/useRestTimer'
 import RestTimerOverlay from './RestTimerOverlay'
+import { muscleLabel, equipmentLabel } from '../utils/labels'
 import type { ExerciseHistory } from '../hooks/useStore'
 
 interface Props {
@@ -155,7 +156,7 @@ export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscar
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-white">{ex.name}</h2>
-              <p className="text-sm text-[#737373] mt-0.5 capitalize">{ex.muscle} · {ex.equipment}</p>
+              <p className="text-sm text-[#737373] mt-0.5">{muscleLabel(ex.muscle)} · {equipmentLabel(ex.equipment)}</p>
             </div>
             <div className="flex items-center gap-1">
               <button
