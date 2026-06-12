@@ -2,18 +2,11 @@ import { useState } from 'react'
 import { Trash2, Clock, Trophy, TrendingUp, ChevronRight, X, Check, Minus } from 'lucide-react'
 import type { WorkoutLog } from '../types/workout'
 import { muscleLabel } from '../utils/labels'
+import { formatDurationSeconds } from '../utils/format'
 
 interface Props {
   logs: WorkoutLog[]
   onDelete: (id: string) => void
-}
-
-function formatDuration(s?: number) {
-  if (!s) return '—'
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  if (h > 0) return `${h}h ${m}m`
-  return `${m} min`
 }
 
 function totalVolume(log: WorkoutLog) {
@@ -55,7 +48,7 @@ function WorkoutDetail({ log, onClose, onDelete }: { log: WorkoutLog; onClose: (
       <div className="flex gap-3 px-4 py-3 border-b border-[#1a1a1a]">
         <div className="flex items-center gap-1.5 text-xs text-[#737373]">
           <Clock size={13} className="text-[#f97316]" />
-          {formatDuration(log.duration_seconds)}
+          {formatDurationSeconds(log.duration_seconds)}
         </div>
         <div className="flex items-center gap-1.5 text-xs text-[#737373]">
           <Trophy size={13} className="text-[#f97316]" />
@@ -173,7 +166,7 @@ export default function HistoryPage({ logs, onDelete }: Props) {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <StatCard label="Treinos" value={totalWorkouts.toString()} />
-        <StatCard label="Tempo total" value={formatDuration(totalMins)} />
+        <StatCard label="Tempo total" value={formatDurationSeconds(totalMins)} />
         <StatCard label="Volume (kg)" value={totalVol > 0 ? `${Math.round(totalVol / 1000)}t` : '—'} />
       </div>
 
@@ -202,7 +195,7 @@ export default function HistoryPage({ logs, onDelete }: Props) {
               <div className="flex gap-4 mt-3">
                 <div className="flex items-center gap-1.5 text-xs text-[#737373]">
                   <Clock size={12} />
-                  {formatDuration(log.duration_seconds)}
+                  {formatDurationSeconds(log.duration_seconds)}
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-[#737373]">
                   <Trophy size={12} />
