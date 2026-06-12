@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import type { MealTemplate, DayNutritionLog, NutritionPlan } from '../types/nutrition'
+import type { MacroTargets } from '../types/profile'
 import NutritionTodayPage from './nutrition/NutritionTodayPage'
-import NutritionEvolutionPage from './nutrition/NutritionEvolutionPage'
 import NutritionLibraryPage from './nutrition/NutritionLibraryPage'
 import NutritionPlansPage from './nutrition/NutritionPlansPage'
-import type { MacroTargets } from '../types/profile'
 
-type NutritionTab = 'today' | 'evolution' | 'library' | 'plans'
+type NutritionTab = 'today' | 'library' | 'plans'
 
 interface Props {
   today: string
@@ -15,7 +14,6 @@ interface Props {
   plans: NutritionPlan[]
   macroTargets: MacroTargets
   onSaveLog: (log: DayNutritionLog) => void
-  onDeleteLog: (id: string) => void
   onSaveTemplate: (t: MealTemplate) => void
   onDeleteTemplate: (id: string) => void
   onImportTemplates: (templates: MealTemplate[]) => void
@@ -26,15 +24,13 @@ interface Props {
 
 const TABS: { id: NutritionTab; label: string }[] = [
   { id: 'today', label: 'Hoje' },
-  { id: 'evolution', label: 'Evolução' },
   { id: 'library', label: 'Refeições' },
   { id: 'plans', label: 'Planos' },
 ]
 
 export default function NutritionPage({
   today, templates, logs, plans, macroTargets,
-  onSaveLog, onDeleteLog,
-  onSaveTemplate, onDeleteTemplate, onImportTemplates,
+  onSaveLog, onSaveTemplate, onDeleteTemplate, onImportTemplates,
   onSavePlan, onDeletePlan, onActivatePlan,
 }: Props) {
   const [tab, setTab] = useState<NutritionTab>('today')
@@ -61,11 +57,6 @@ export default function NutritionPage({
             today={today} templates={templates} logs={logs} plans={plans}
             macroTargets={macroTargets}
             onSaveLog={onSaveLog} onSaveTemplate={onSaveTemplate}
-          />
-        )}
-        {tab === 'evolution' && (
-          <NutritionEvolutionPage
-            logs={logs} plans={plans} today={today} onDeleteLog={onDeleteLog}
           />
         )}
         {tab === 'library' && (
