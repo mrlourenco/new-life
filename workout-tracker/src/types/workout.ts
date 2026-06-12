@@ -40,6 +40,7 @@ export interface ExerciseLog {
   exercise_id: string
   exercise_name: string
   muscle: string
+  notes?: string
   sets: SetLog[]
 }
 
