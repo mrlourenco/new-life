@@ -16,6 +16,18 @@ const GOALS = [
 
 const MUSCLES = ['chest', 'back', 'legs', 'shoulders', 'biceps', 'triceps', 'core', 'glutes', 'cardio']
 const EQUIPMENT = ['barbell', 'dumbbells', 'cable', 'machine', 'bodyweight', 'bands', 'kettlebell']
+const CARDIO_EQUIPMENT = ['none', 'treadmill', 'bike', 'rower', 'elliptical', 'outdoor', 'other']
+const CARDIO_EQUIPMENT_LABELS: Record<string, string> = {
+  none: 'Sem equipamento',
+  treadmill: 'Passadeira',
+  bike: 'Bicicleta',
+  rower: 'Remo',
+  elliptical: 'Elíptica',
+  outdoor: 'Ao ar livre',
+  other: 'Outro',
+}
+
+function isCardio(muscle: string) { return muscle === 'cardio' }
 const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
 function uid() {
@@ -285,16 +297,30 @@ export default function PlanBuilder({ onSave, onCancel }: Props) {
 
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <p className="text-[10px] text-[#737373] mb-1">Músculo</p>
-                            <select value={ex.muscle} onChange={e => updateExercise(sess.id, ex.id, { muscle: e.target.value })} className={inputCls}>
+                            <p className="text-[10px] text-[#737373] mb-1">Tipo</p>
+                            <select
+                              value={ex.muscle}
+                              onChange={e => {
+                                const muscle = e.target.value
+                                const defaultEq = isCardio(muscle) ? 'none' : 'barbell'
+                                updateExercise(sess.id, ex.id, { muscle, equipment: defaultEq })
+                              }}
+                              className={inputCls}
+                            >
                               {MUSCLES.map(m => <option key={m} value={m}>{m}</option>)}
                             </select>
                           </div>
                           <div>
                             <p className="text-[10px] text-[#737373] mb-1">Equipamento</p>
-                            <select value={ex.equipment} onChange={e => updateExercise(sess.id, ex.id, { equipment: e.target.value })} className={inputCls}>
-                              {EQUIPMENT.map(eq => <option key={eq} value={eq}>{eq}</option>)}
-                            </select>
+                            {isCardio(ex.muscle) ? (
+                              <select value={ex.equipment} onChange={e => updateExercise(sess.id, ex.id, { equipment: e.target.value })} className={inputCls}>
+                                {CARDIO_EQUIPMENT.map(eq => <option key={eq} value={eq}>{CARDIO_EQUIPMENT_LABELS[eq]}</option>)}
+                              </select>
+                            ) : (
+                              <select value={ex.equipment} onChange={e => updateExercise(sess.id, ex.id, { equipment: e.target.value })} className={inputCls}>
+                                {EQUIPMENT.map(eq => <option key={eq} value={eq}>{eq}</option>)}
+                              </select>
+                            )}
                           </div>
                         </div>
 
