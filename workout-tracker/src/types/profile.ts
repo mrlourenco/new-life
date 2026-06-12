@@ -1,0 +1,25 @@
+export interface MacroTargets {
+  protein_g: number
+  carbs_g: number
+  fat_g: number
+  fiber_g: number
+}
+
+export interface WeightEntry {
+  id: string
+  date: string
+  weight_kg: number
+  note?: string
+}
+
+export interface UserProfile {
+  macro_targets: MacroTargets
+  weight_entries: WeightEntry[]
+}
+
+export const DEFAULT_MACRO_TARGETS: MacroTargets = {
+  protein_g: 150,
+  carbs_g: 250,
+  fat_g: 70,
+  fiber_g: 30,
+}

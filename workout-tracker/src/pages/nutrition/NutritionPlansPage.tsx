@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react'
 import { Upload, Trash2, ChevronDown, ChevronUp, AlertCircle, Copy, Check, Download, Plus, Zap } from 'lucide-react'
 import type { NutritionPlan, MealTemplate, DayNutritionLog } from '../../types/nutrition'
+import { MEAL_CATEGORIES } from '../../types/nutrition'
 import { exportNutritionData, GOAL_PT, dowLabel, templateMacros } from '../../utils/nutrition'
 import NutritionPlanBuilder from '../../components/nutrition/NutritionPlanBuilder'
+import MacroBar from '../../components/nutrition/MacroBar'
 
 interface Props {
   plans: NutritionPlan[]
@@ -207,23 +209,59 @@ export default function NutritionPlansPage({ plans, templates, logs, onSave, onD
                 </div>
 
                 {isExpanded && (
-                  <div className="border-t border-[#2e2e2e] px-4 py-3 space-y-2">
-                    {plan.description && <p className="text-[#737373] text-xs mb-2">{plan.description}</p>}
+                  <div className="border-t border-[#2e2e2e] px-4 py-3 space-y-3">
+                    {plan.description && <p className="text-[#737373] text-xs">{plan.description}</p>}
                     {[...plan.days].sort((a, b) => a.day_of_week - b.day_of_week).map(day => {
                       const dayTemplates = day.template_ids.map(id => templates.find(t => t.id === id)).filter(Boolean) as MealTemplate[]
                       const kcal = dayTemplates.reduce((acc, t) => acc + templateMacros(t).calories, 0)
+                      // Group by category display order
+                      const byCategory = MEAL_CATEGORIES.map(cat => ({
+                        cat,
+                        items: dayTemplates.filter(t => t.category === cat.id),
+                      })).filter(g => g.items.length > 0)
                       return (
-                        <div key={day.day_of_week} className="bg-[#0f0f0f] rounded-xl px-3 py-2.5">
-                          <div className="flex justify-between items-center mb-1.5">
-                            <p className="text-sm font-medium text-white">{dowLabel(day.day_of_week)}</p>
-                            <span className="text-xs text-[#737373]">{Math.round(kcal)} kcal</span>
+                        <div key={day.day_of_week} className="bg-[#0f0f0f] rounded-xl p-3">
+                          <div className="flex justify-between items-center mb-2">
+                            <p className="text-sm font-semibold text-white">{dowLabel(day.day_of_week)}</p>
+                            <span className="text-xs text-[#737373]">{Math.round(kcal)} kcal total</span>
                           </div>
-                          <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-                            {day.template_ids.map(id => {
-                              const t = templates.find(tt => tt.id === id)
-                              return <span key={id} className={`text-[10px] ${t ? 'text-[#737373]' : 'text-[#525252] line-through'}`}>{t?.name ?? id}</span>
-                            })}
-                          </div>
+                          {byCategory.length === 0 && (
+                            <p className="text-[10px] text-[#525252]">Sem refeições</p>
+                          )}
+                          {byCategory.map(({ cat, items }) => (
+                            <div key={cat.id} className="mb-2 last:mb-0">
+                              <p className="text-[10px] text-[#525252] font-semibold uppercase tracking-wider mb-1">{cat.label}</p>
+                              <div className="space-y-1.5">
+                                {items.map(t => {
+                                  const m = templateMacros(t)
+                                  return (
+                                    <div key={t.id} className="bg-[#1a1a1a] rounded-xl px-3 py-2.5">
+                                      <div className="flex justify-between items-center mb-1">
+                                        <p className="text-xs font-medium text-white truncate">{t.name}</p>
+                                        <span className="text-xs font-bold text-white ml-2 flex-shrink-0">{Math.round(m.calories)} kcal</span>
+                                      </div>
+                                      <MacroBar macros={m} compact />
+                                      <div className="flex gap-3 mt-1">
+                                        <span className="text-[10px] text-[#60a5fa]">P {Math.round(m.protein_g)}g</span>
+                                        <span className="text-[10px] text-[#f97316]">C {Math.round(m.carbs_g)}g</span>
+                                        <span className="text-[10px] text-[#a78bfa]">G {Math.round(m.fat_g)}g</span>
+                                      </div>
+                                      {t.foods.length > 0 && (
+                                        <p className="text-[9px] text-[#3f3f3f] mt-1 truncate">
+                                          {t.foods.map(f => f.name).join(' · ')}
+                                        </p>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                          {day.template_ids.some(id => !templates.find(t => t.id === id)) && (
+                            <p className="text-[9px] text-[#525252] mt-1">
+                              {day.template_ids.filter(id => !templates.find(t => t.id === id)).length} refeição(ões) não encontrada(s) na biblioteca
+                            </p>
+                          )}
                         </div>
                       )
                     })}
