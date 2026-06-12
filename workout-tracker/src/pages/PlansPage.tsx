@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
-import { Upload, Trash2, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
+import { Upload, Trash2, ChevronDown, ChevronUp, AlertCircle, Plus, Copy, Check } from 'lucide-react'
 import type { WorkoutPlan } from '../types/workout'
+import PlanBuilder from '../components/PlanBuilder'
 
 interface Props {
   plans: WorkoutPlan[]
@@ -14,6 +15,55 @@ const GOAL_LABELS: Record<string, string> = {
   endurance: 'Resistência',
   general: 'Geral',
 }
+
+const LLM_PROMPT = `És um personal trainer especialista em programação de treino.
+Gera um plano de treino no formato JSON exato abaixo.
+
+REGRAS DO FORMATO:
+- "id": string única sem espaços (ex: "ppl-hypertrofia-v1")
+- "goal": apenas um destes valores: "strength", "hypertrophy", "endurance", "general"
+- "day_of_week": 0=Domingo, 1=Segunda, 2=Terça, 3=Quarta, 4=Quinta, 5=Sexta, 6=Sábado
+- "reps": pode ser "8-10", "12", "AMRAP", "30s", etc.
+- "rest_seconds": número inteiro (ex: 90)
+- "muscle": em inglês minúsculas (ex: "chest", "back", "legs", "shoulders", "biceps", "triceps", "core", "glutes", "cardio")
+- "equipment": em inglês (ex: "barbell", "dumbbells", "cable", "machine", "bodyweight")
+- "weight_suggestion": opcional, ex: "70% 1RM", "bodyweight", "moderado"
+- Todos os "id" dentro de sessions e exercises devem ser únicos
+
+FORMATO JSON (segue exatamente esta estrutura):
+{
+  "id": "...",
+  "name": "...",
+  "goal": "...",
+  "description": "...",
+  "days_per_week": 3,
+  "sessions": [
+    {
+      "id": "...",
+      "name": "...",
+      "day_of_week": 1,
+      "muscle_groups": ["chest", "shoulders", "triceps"],
+      "exercises": [
+        {
+          "id": "...",
+          "name": "Nome em Português",
+          "sets": 4,
+          "reps": "8-10",
+          "rest_seconds": 90,
+          "muscle": "chest",
+          "equipment": "barbell",
+          "notes": "Dica técnica opcional",
+          "weight_suggestion": "70% 1RM"
+        }
+      ]
+    }
+  ]
+}
+
+RESPONDE APENAS COM O JSON, sem texto antes ou depois, sem markdown, sem \`\`\`json.
+
+MEU PEDIDO:
+[descreve aqui o teu objetivo, dias disponíveis por semana, equipamento disponível, nível de experiência]`
 
 const EXAMPLE_PLAN: WorkoutPlan = {
   id: 'example-ppl-v1',
@@ -69,10 +119,31 @@ function validatePlan(data: unknown): data is WorkoutPlan {
   return true
 }
 
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  const handle = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+  return (
+    <button
+      onClick={handle}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${copied ? 'bg-green-900/40 text-green-400' : 'bg-[#2e2e2e] text-[#a3a3a3] hover:text-white'}`}
+    >
+      {copied ? <Check size={12} /> : <Copy size={12} />}
+      {copied ? 'Copiado!' : 'Copiar'}
+    </button>
+  )
+}
+
 export default function PlansPage({ plans, onAdd, onDelete }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [showFormat, setShowFormat] = useState(false)
+  const [showPrompt, setShowPrompt] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [showBuilder, setShowBuilder] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,9 +164,13 @@ export default function PlansPage({ plans, onAdd, onDelete }: Props) {
     e.target.value = ''
   }
 
-  const loadExample = () => {
-    onAdd(EXAMPLE_PLAN)
-    setError(null)
+  if (showBuilder) {
+    return (
+      <PlanBuilder
+        onSave={plan => { onAdd(plan); setShowBuilder(false) }}
+        onCancel={() => setShowBuilder(false)}
+      />
+    )
   }
 
   return (
@@ -104,18 +179,27 @@ export default function PlansPage({ plans, onAdd, onDelete }: Props) {
         <h1 className="text-2xl font-bold text-white">Planos</h1>
       </div>
 
-      {/* Import */}
+      {/* Actions */}
       <div className="mb-6 space-y-2">
+        <button
+          onClick={() => setShowBuilder(true)}
+          className="w-full flex items-center justify-center gap-2 py-3 bg-[#f97316] rounded-xl text-white font-semibold hover:bg-[#ea6c0a] transition-colors"
+        >
+          <Plus size={18} />
+          Criar plano na app
+        </button>
+
         <input ref={fileRef} type="file" accept=".json,.txt" onChange={handleFile} className="hidden" />
         <button
           onClick={() => fileRef.current?.click()}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-[#f97316] rounded-xl text-white font-semibold hover:bg-[#ea6c0a] transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-3 bg-[#1a1a1a] rounded-xl text-[#a3a3a3] text-sm border border-[#2e2e2e] hover:border-[#f97316]/50 transition-colors"
         >
-          <Upload size={18} />
-          Importar plano JSON
+          <Upload size={16} />
+          Importar ficheiro JSON / TXT
         </button>
+
         <button
-          onClick={loadExample}
+          onClick={() => { onAdd(EXAMPLE_PLAN); setError(null) }}
           className="w-full py-3 bg-[#1a1a1a] rounded-xl text-[#a3a3a3] text-sm border border-[#2e2e2e] hover:border-[#f97316]/50 transition-colors"
         >
           Carregar plano de exemplo
@@ -129,7 +213,28 @@ export default function PlansPage({ plans, onAdd, onDelete }: Props) {
         </div>
       )}
 
-      {/* Format reference */}
+      {/* LLM Prompt */}
+      <div className="mb-3 bg-[#1a1a1a] rounded-xl overflow-hidden">
+        <button
+          onClick={() => setShowPrompt(!showPrompt)}
+          className="w-full flex items-center justify-between px-4 py-3 text-sm text-[#a3a3a3]"
+        >
+          <span>Prompt para ChatGPT / Claude</span>
+          {showPrompt ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+        {showPrompt && (
+          <div className="border-t border-[#2e2e2e]">
+            <div className="flex justify-end px-3 pt-2">
+              <CopyButton text={LLM_PROMPT} />
+            </div>
+            <pre className="px-4 pb-4 pt-2 text-[10px] text-[#737373] overflow-x-auto leading-relaxed whitespace-pre-wrap">
+              {LLM_PROMPT}
+            </pre>
+          </div>
+        )}
+      </div>
+
+      {/* JSON Format reference */}
       <div className="mb-4 bg-[#1a1a1a] rounded-xl overflow-hidden">
         <button
           onClick={() => setShowFormat(!showFormat)}
@@ -139,7 +244,38 @@ export default function PlansPage({ plans, onAdd, onDelete }: Props) {
           {showFormat ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
         {showFormat && (
-          <pre className="px-4 pb-4 text-[10px] text-[#737373] overflow-x-auto leading-relaxed">
+          <div className="border-t border-[#2e2e2e]">
+            <div className="flex justify-end px-3 pt-2">
+              <CopyButton text={`{
+  "id": "meu-plano-v1",
+  "name": "Nome do Plano",
+  "goal": "hypertrophy",
+  "description": "...",
+  "days_per_week": 3,
+  "sessions": [
+    {
+      "id": "sessao-1",
+      "name": "Push A",
+      "day_of_week": 1,
+      "muscle_groups": ["chest","shoulders"],
+      "exercises": [
+        {
+          "id": "ex-1",
+          "name": "Supino Plano",
+          "sets": 4,
+          "reps": "8-10",
+          "rest_seconds": 90,
+          "muscle": "chest",
+          "equipment": "barbell",
+          "notes": "Opcional",
+          "weight_suggestion": "70% 1RM"
+        }
+      ]
+    }
+  ]
+}`} />
+            </div>
+            <pre className="px-4 pb-4 pt-2 text-[10px] text-[#737373] overflow-x-auto leading-relaxed">
 {`{
   "id": "meu-plano-v1",
   "name": "Nome do Plano",
@@ -168,7 +304,8 @@ export default function PlansPage({ plans, onAdd, onDelete }: Props) {
     }
   ]
 }`}
-          </pre>
+            </pre>
+          </div>
         )}
       </div>
 
