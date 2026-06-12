@@ -96,7 +96,7 @@ export default function NutritionTodayPage({ plans, logs, today, onSaveLog }: Pr
             { label: 'Proteína', val: Math.round(macros.protein_g), unit: 'g', color: 'text-[#60a5fa]' },
             { label: 'Carboidratos', val: Math.round(macros.carbs_g), unit: 'g', color: 'text-[#f97316]' },
             { label: 'Gordura', val: Math.round(macros.fat_g), unit: 'g', color: 'text-[#a78bfa]' },
-            { label: 'Fibra', val: Math.round(macros.fiber_g), unit: 'g', color: 'text-[#4ade80]' },
+            { label: 'Fibra', val: Math.round(macros.fiber_g), unit: 'g', color: 'text-[#14b8a6]' },
           ].map(({ label, val, unit, color }) => (
             <div key={label} className="bg-[#0f0f0f] rounded-xl p-2 text-center">
               <p className={`text-sm font-bold ${color}`}>{val}{unit}</p>

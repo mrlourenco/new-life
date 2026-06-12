@@ -15,6 +15,7 @@ interface Props {
   onDeleteLog: (id: string) => void
   onAddPlan: (plan: MealPlan) => void
   onDeletePlan: (id: string) => void
+  onUpdatePlan: (plan: MealPlan) => void
 }
 
 const TABS: { id: NutritionTab; label: string }[] = [
@@ -24,7 +25,7 @@ const TABS: { id: NutritionTab; label: string }[] = [
   { id: 'plans', label: 'Planos' },
 ]
 
-export default function NutritionPage({ plans, logs, today, onSaveLog, onDeleteLog, onAddPlan, onDeletePlan }: Props) {
+export default function NutritionPage({ plans, logs, today, onSaveLog, onDeleteLog, onAddPlan, onDeletePlan, onUpdatePlan }: Props) {
   const [tab, setTab] = useState<NutritionTab>('today')
 
   return (
@@ -76,6 +77,7 @@ export default function NutritionPage({ plans, logs, today, onSaveLog, onDeleteL
             logs={logs}
             onAdd={onAddPlan}
             onDelete={onDeletePlan}
+            onUpdate={onUpdatePlan}
           />
         )}
       </div>

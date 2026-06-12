@@ -19,7 +19,11 @@ export function useMealPlans() {
     setPlans(prev => { const u = prev.filter(p => p.id !== id); save(KEYS.plans, u); return u })
   }, [])
 
-  return { plans, addPlan, deletePlan }
+  const updatePlan = useCallback((plan: MealPlan) => {
+    setPlans(prev => { const u = prev.map(p => p.id === plan.id ? plan : p); save(KEYS.plans, u); return u })
+  }, [])
+
+  return { plans, addPlan, deletePlan, updatePlan }
 }
 
 export function useNutritionLogs() {

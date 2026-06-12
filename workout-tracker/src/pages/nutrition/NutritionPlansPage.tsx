@@ -1,13 +1,16 @@
 import { useRef, useState } from 'react'
-import { Upload, Trash2, ChevronDown, ChevronUp, AlertCircle, Copy, Check, Download } from 'lucide-react'
-import type { MealPlan, DayNutritionLog } from '../../types/nutrition'
-import { exportNutritionData, GOAL_PT, dowLabel } from '../../utils/nutrition'
+import { Upload, Trash2, ChevronDown, ChevronUp, AlertCircle, Copy, Check, Download, Plus, Pencil, Search } from 'lucide-react'
+import type { MealPlan, DayNutritionLog, PlannedMeal } from '../../types/nutrition'
+import { exportNutritionData, GOAL_PT, dowLabel, dayMacros } from '../../utils/nutrition'
+import MealEditor from '../../components/nutrition/MealEditor'
+import { searchFoods, FOOD_CATEGORIES, type FoodEntry } from '../../data/foods'
 
 interface Props {
   plans: MealPlan[]
   logs: DayNutritionLog[]
   onAdd: (plan: MealPlan) => void
   onDelete: (id: string) => void
+  onUpdate: (plan: MealPlan) => void
 }
 
 const LLM_PROMPT = `És um nutricionista especialista em planeamento alimentar.
@@ -134,11 +137,106 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
-export default function NutritionPlansPage({ plans, logs, onAdd, onDelete }: Props) {
-  const [expanded, setExpanded] = useState<string | null>(null)
+function FoodDBBrowser() {
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState<string | null>(null)
+  const [selected, setSelected] = useState<FoodEntry | null>(null)
+
+  let results = searchFoods(query)
+  if (category) results = results.filter(f => f.category === category)
+
+  return (
+    <div className="space-y-3">
+      {/* Search */}
+      <div className="flex items-center gap-2 bg-[#0f0f0f] rounded-xl px-3 py-2.5">
+        <Search size={14} className="text-[#525252] flex-shrink-0" />
+        <input
+          value={query}
+          onChange={e => { setQuery(e.target.value); setSelected(null) }}
+          placeholder="Pesquisar alimento..."
+          className="flex-1 bg-transparent text-white text-sm placeholder-[#525252] outline-none"
+        />
+      </div>
+
+      {/* Category filter */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+        <button
+          onClick={() => { setCategory(null); setSelected(null) }}
+          className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium ${!category ? 'bg-[#22c55e] text-black' : 'bg-[#2e2e2e] text-[#a3a3a3]'}`}
+        >
+          Todos
+        </button>
+        {FOOD_CATEGORIES.map(cat => (
+          <button
+            key={cat}
+            onClick={() => { setCategory(category === cat ? null : cat); setSelected(null) }}
+            className={`flex-shrink-0 px-3 py-1 rounded-full text-[10px] font-medium ${category === cat ? 'bg-[#22c55e] text-black' : 'bg-[#2e2e2e] text-[#a3a3a3]'}`}
+          >
+            {cat.split(' ')[0]}
+          </button>
+        ))}
+      </div>
+
+      {/* Selected food detail */}
+      {selected && (
+        <div className="bg-[#0f0f0f] rounded-xl p-3 border border-[#22c55e]/30">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-semibold text-white">{selected.name}</p>
+            <p className="text-[10px] text-[#737373]">por 100g</p>
+          </div>
+          <div className="grid grid-cols-5 gap-1.5">
+            {[
+              { label: 'kcal', val: selected.per100g.calories, color: 'text-white' },
+              { label: 'Prot.', val: `${selected.per100g.protein_g}g`, color: 'text-[#60a5fa]' },
+              { label: 'Carb.', val: `${selected.per100g.carbs_g}g`, color: 'text-[#f97316]' },
+              { label: 'Gord.', val: `${selected.per100g.fat_g}g`, color: 'text-[#a78bfa]' },
+              { label: 'Fibra', val: `${selected.per100g.fiber_g}g`, color: 'text-[#14b8a6]' },
+            ].map(({ label, val, color }) => (
+              <div key={label} className="bg-[#1a1a1a] rounded-lg p-2 text-center">
+                <p className={`text-xs font-bold ${color}`}>{val}</p>
+                <p className="text-[9px] text-[#525252] mt-0.5">{label}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-[#525252] mt-2">Porção sugerida: {selected.defaultPortionLabel}</p>
+        </div>
+      )}
+
+      {/* Results list */}
+      <div className="space-y-1 max-h-60 overflow-y-auto">
+        {results.slice(0, 30).map(food => (
+          <button
+            key={food.id}
+            onClick={() => setSelected(selected?.id === food.id ? null : food)}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left ${
+              selected?.id === food.id ? 'bg-[#22c55e]/10 border border-[#22c55e]/30' : 'bg-[#0f0f0f] hover:bg-[#1a1a1a]'
+            }`}
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-white font-medium truncate">{food.name}</p>
+              <p className="text-[10px] text-[#525252]">{food.defaultPortionLabel} · {Math.round(food.per100g.calories * food.defaultPortionG / 100)} kcal</p>
+            </div>
+            <span className="text-[10px] text-[#737373] flex-shrink-0 ml-2">
+              P {food.per100g.protein_g}g
+            </span>
+          </button>
+        ))}
+        {results.length > 30 && (
+          <p className="text-[10px] text-[#525252] text-center py-2">+{results.length - 30} resultados. Usa a pesquisa para filtrar.</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default function NutritionPlansPage({ plans, logs, onAdd, onDelete, onUpdate }: Props) {
+  const [expandedPlan, setExpandedPlan] = useState<string | null>(null)
+  const [expandedDay, setExpandedDay] = useState<string | null>(null)
   const [showPrompt, setShowPrompt] = useState(false)
   const [showFormat, setShowFormat] = useState(false)
+  const [showFoodDB, setShowFoodDB] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [editingMeal, setEditingMeal] = useState<{ planId: string; dayId: string; meal?: PlannedMeal } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,6 +255,46 @@ export default function NutritionPlansPage({ plans, logs, onAdd, onDelete }: Pro
     }
     reader.readAsText(file)
     e.target.value = ''
+  }
+
+  const handleSaveMeal = (meal: PlannedMeal) => {
+    if (!editingMeal) return
+    const plan = plans.find(p => p.id === editingMeal.planId)
+    if (!plan) return
+    const days = plan.days.map(d => {
+      if (d.id !== editingMeal.dayId) return d
+      const existing = d.meals.find(m => m.id === meal.id)
+      const meals = existing
+        ? d.meals.map(m => m.id === meal.id ? meal : m)
+        : [...d.meals, meal]
+      return { ...d, meals }
+    })
+    onUpdate({ ...plan, days })
+    setEditingMeal(null)
+  }
+
+  const handleDeleteMeal = (planId: string, dayId: string, mealId: string) => {
+    const plan = plans.find(p => p.id === planId)
+    if (!plan) return
+    const days = plan.days.map(d =>
+      d.id === dayId ? { ...d, meals: d.meals.filter(m => m.id !== mealId) } : d
+    )
+    onUpdate({ ...plan, days })
+  }
+
+  // Show meal editor full-screen
+  if (editingMeal) {
+    const plan = plans.find(p => p.id === editingMeal.planId)
+    const day = plan?.days.find(d => d.id === editingMeal.dayId)
+    const nextOrder = (day?.meals.length ?? 0) + 1
+    return (
+      <MealEditor
+        meal={editingMeal.meal}
+        nextOrder={nextOrder}
+        onSave={handleSaveMeal}
+        onCancel={() => setEditingMeal(null)}
+      />
+    )
   }
 
   return (
@@ -191,6 +329,22 @@ export default function NutritionPlansPage({ plans, logs, onAdd, onDelete }: Pro
           {error}
         </div>
       )}
+
+      {/* Food DB */}
+      <div className="mb-3 bg-[#1a1a1a] rounded-xl overflow-hidden">
+        <button
+          onClick={() => setShowFoodDB(!showFoodDB)}
+          className="w-full flex items-center justify-between px-4 py-3 text-sm text-[#a3a3a3]"
+        >
+          <span>Base de alimentos</span>
+          {showFoodDB ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+        {showFoodDB && (
+          <div className="border-t border-[#2e2e2e] p-4">
+            <FoodDBBrowser />
+          </div>
+        )}
+      </div>
 
       {/* LLM Prompt */}
       <div className="mb-3 bg-[#1a1a1a] rounded-xl overflow-hidden">
@@ -241,59 +395,96 @@ export default function NutritionPlansPage({ plans, logs, onAdd, onDelete }: Pro
         <div className="space-y-3">
           {plans.map(plan => (
             <div key={plan.id} className="bg-[#1a1a1a] rounded-2xl overflow-hidden">
+              {/* Plan header */}
               <div className="flex items-center justify-between px-4 py-3">
                 <button
                   className="flex-1 text-left"
-                  onClick={() => setExpanded(expanded === plan.id ? null : plan.id)}
+                  onClick={() => setExpandedPlan(expandedPlan === plan.id ? null : plan.id)}
                 >
                   <p className="text-white font-semibold">{plan.name}</p>
                   <p className="text-[#737373] text-xs mt-0.5">
-                    {GOAL_PT[plan.goal ?? ''] ?? plan.goal ?? 'Geral'}
+                    {GOAL_PT[plan.goal ?? ''] ?? 'Geral'}
                     {plan.daily_calories_target && ` · ${plan.daily_calories_target} kcal/dia`}
                     {' · '}{plan.days.length} dias · {plan.type === 'weekly' ? 'Semanal' : 'Personalizado'}
                   </p>
                 </button>
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => onDelete(plan.id)}
-                    className="p-2 text-[#525252] hover:text-red-400 transition-colors"
-                  >
+                  <button onClick={() => onDelete(plan.id)} className="p-2 text-[#525252] hover:text-red-400 transition-colors">
                     <Trash2 size={16} />
                   </button>
                   <button
-                    onClick={() => setExpanded(expanded === plan.id ? null : plan.id)}
+                    onClick={() => setExpandedPlan(expandedPlan === plan.id ? null : plan.id)}
                     className="p-2 text-[#525252]"
                   >
-                    {expanded === plan.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    {expandedPlan === plan.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </button>
                 </div>
               </div>
 
-              {expanded === plan.id && (
+              {/* Plan days */}
+              {expandedPlan === plan.id && (
                 <div className="border-t border-[#2e2e2e] px-4 py-3 space-y-2">
-                  {plan.description && (
-                    <p className="text-[#737373] text-xs mb-3">{plan.description}</p>
-                  )}
+                  {plan.description && <p className="text-[#737373] text-xs mb-2">{plan.description}</p>}
                   {[...plan.days]
                     .sort((a, b) => (a.day_of_week ?? 0) - (b.day_of_week ?? 0))
                     .map(day => {
                       const label = day.label ?? (day.day_of_week !== undefined ? dowLabel(day.day_of_week) : day.date ?? '')
-                      const kcal = day.meals.reduce((acc, m) => acc + m.foods.reduce((a, f) => a + (f.calories ?? 0), 0), 0)
+                      const macros = dayMacros(day)
+                      const isDayOpen = expandedDay === day.id
+
                       return (
-                        <div key={day.id} className="bg-[#0f0f0f] rounded-xl px-3 py-2.5">
-                          <div className="flex items-center justify-between">
-                            <p className="text-white text-sm font-medium capitalize">{label}</p>
-                            <span className="text-xs text-[#737373]">{Math.round(kcal)} kcal</span>
-                          </div>
-                          <p className="text-[#525252] text-xs mt-1">{day.meals.length} refeições</p>
-                          <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-1">
-                            {[...day.meals].sort((a, b) => a.order - b.order).slice(0, 5).map(m => (
-                              <span key={m.id} className="text-[10px] text-[#737373]">{m.name}</span>
-                            ))}
-                            {day.meals.length > 5 && (
-                              <span className="text-[10px] text-[#525252]">+{day.meals.length - 5} mais</span>
-                            )}
-                          </div>
+                        <div key={day.id} className="bg-[#0f0f0f] rounded-xl overflow-hidden">
+                          <button
+                            className="w-full flex items-center justify-between px-3 py-2.5 text-left"
+                            onClick={() => setExpandedDay(isDayOpen ? null : day.id)}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white text-sm font-medium capitalize">{label}</p>
+                              <p className="text-[#525252] text-xs mt-0.5">
+                                {day.meals.length} refeições · {Math.round(macros.calories)} kcal
+                              </p>
+                            </div>
+                            {isDayOpen ? <ChevronUp size={14} className="text-[#525252]" /> : <ChevronDown size={14} className="text-[#525252]" />}
+                          </button>
+
+                          {isDayOpen && (
+                            <div className="border-t border-[#1a1a1a] px-3 pb-3 pt-2 space-y-2">
+                              {[...day.meals].sort((a, b) => a.order - b.order).map(meal => {
+                                const mkcal = meal.foods.reduce((acc, f) => acc + (f.calories ?? 0), 0)
+                                return (
+                                  <div key={meal.id} className="flex items-center gap-2 bg-[#1a1a1a] rounded-xl px-3 py-2">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs text-white font-medium truncate">{meal.name}</p>
+                                      <p className="text-[10px] text-[#525252]">
+                                        {meal.foods.length} alimentos · {Math.round(mkcal)} kcal
+                                        {meal.time && ` · ${meal.time}`}
+                                      </p>
+                                    </div>
+                                    <button
+                                      onClick={() => setEditingMeal({ planId: plan.id, dayId: day.id, meal })}
+                                      className="p-1.5 text-[#525252] hover:text-[#a3a3a3]"
+                                    >
+                                      <Pencil size={13} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteMeal(plan.id, day.id, meal.id)}
+                                      className="p-1.5 text-[#525252] hover:text-red-400"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                )
+                              })}
+
+                              <button
+                                onClick={() => setEditingMeal({ planId: plan.id, dayId: day.id })}
+                                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] text-[#22c55e] border border-[#22c55e]/30 hover:border-[#22c55e]/60"
+                              >
+                                <Plus size={12} />
+                                Nova refeição
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )
                     })}
