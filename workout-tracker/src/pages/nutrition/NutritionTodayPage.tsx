@@ -1,128 +1,189 @@
-import type { MealPlan, DayNutritionLog } from '../../types/nutrition'
-import { findActivePlan, dayMacros } from '../../utils/nutrition'
+import { useState } from 'react'
+import { Plus, Trash2, Utensils, Clock } from 'lucide-react'
+import type { MealTemplate, MealEntry, DayNutritionLog, NutritionPlan } from '../../types/nutrition'
+import { MEAL_CATEGORIES } from '../../types/nutrition'
+import { entryMacros, dayTotals, getActivePlan, getSuggestedTemplateIds } from '../../utils/nutrition'
 import MacroBar from '../../components/nutrition/MacroBar'
-import MealCard from '../../components/nutrition/MealCard'
-import { Utensils } from 'lucide-react'
+import MealEntryLogger from '../../components/nutrition/MealEntryLogger'
 
 interface Props {
-  plans: MealPlan[]
-  logs: DayNutritionLog[]
   today: string
+  templates: MealTemplate[]
+  logs: DayNutritionLog[]
+  plans: NutritionPlan[]
   onSaveLog: (log: DayNutritionLog) => void
+  onSaveTemplate: (t: MealTemplate) => void
 }
 
-export default function NutritionTodayPage({ plans, logs, today, onSaveLog }: Props) {
-  const found = findActivePlan(plans, today)
+export default function NutritionTodayPage({ today, templates, logs, plans, onSaveLog, onSaveTemplate }: Props) {
+  const [showLogger, setShowLogger] = useState(false)
+
+  const activePlan = getActivePlan(plans)
   const log = logs.find(l => l.date === today)
+  const entries = [...(log?.entries ?? [])].sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''))
 
-  const isCompleted = (mealId: string) =>
-    log?.meals.find(m => m.meal_id === mealId)?.completed ?? false
+  const totals = log ? dayTotals(log) : { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0 }
+  const target = activePlan?.daily_calories_target
 
-  const toggle = (mealId: string, mealName: string) => {
-    const current = log?.meals ?? []
-    const exists = current.find(m => m.meal_id === mealId)
-    const meals = exists
-      ? current.map(m => m.meal_id === mealId ? { ...m, completed: !m.completed, completed_at: !m.completed ? new Date().toISOString() : undefined } : m)
-      : [...current, { meal_id: mealId, meal_name: mealName, completed: true, completed_at: new Date().toISOString() }]
+  const suggestedIds = getSuggestedTemplateIds(activePlan, today)
+  const todayEntryTemplateIds = entries.map(e => e.template_id).filter(Boolean) as string[]
 
-    onSaveLog({
+  const removeEntry = (id: string) => {
+    const updated: DayNutritionLog = {
       id: log?.id ?? crypto.randomUUID(),
       date: today,
-      plan_id: found?.plan.id,
-      day_plan_id: found?.day.id,
-      meals,
-    })
+      entries: (log?.entries ?? []).filter(e => e.id !== id),
+    }
+    onSaveLog(updated)
   }
 
-  if (plans.length === 0) {
+  const handleLog = (entry: MealEntry) => {
+    const updated: DayNutritionLog = {
+      id: log?.id ?? crypto.randomUUID(),
+      date: today,
+      entries: [...(log?.entries ?? []), entry],
+    }
+    onSaveLog(updated)
+  }
+
+  // Suggestions: templates from plan not yet logged today
+  const unloggedSuggestions = suggestedIds
+    .filter(id => !todayEntryTemplateIds.includes(id))
+    .map(id => templates.find(t => t.id === id))
+    .filter(Boolean) as MealTemplate[]
+
+  const dateLabel = new Date(today + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
+
+  if (showLogger) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center px-4 text-center">
-        <div className="w-16 h-16 bg-[#1a1a1a] rounded-full flex items-center justify-center mb-4">
-          <Utensils size={28} className="text-[#22c55e]" />
-        </div>
-        <p className="text-white font-semibold text-lg">Sem plano alimentar</p>
-        <p className="text-[#737373] text-sm mt-1 max-w-xs">Importa um plano no separador Planos</p>
-      </div>
+      <MealEntryLogger
+        today={today}
+        templates={templates}
+        logs={logs}
+        suggestedIds={suggestedIds}
+        todayEntryIds={todayEntryTemplateIds}
+        onLog={entry => { handleLog(entry); setShowLogger(false) }}
+        onSaveTemplate={onSaveTemplate}
+        onClose={() => setShowLogger(false)}
+      />
     )
-  }
-
-  if (!found) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center px-4 text-center">
-        <p className="text-white font-semibold">Sem plano para hoje</p>
-        <p className="text-[#737373] text-sm mt-1">Nenhum plano tem entrada para este dia da semana</p>
-      </div>
-    )
-  }
-
-  const { plan, day } = found
-  const macros = dayMacros(day)
-  const completedMeals = day.meals.filter(m => isCompleted(m.id)).length
-  const completedMacros = {
-    calories: day.meals.filter(m => isCompleted(m.id)).reduce((acc, m) => {
-      const mm = m.foods.reduce((a, f) => ({ calories: a.calories + f.calories, protein_g: a.protein_g + (f.protein_g ?? 0), carbs_g: a.carbs_g + (f.carbs_g ?? 0), fat_g: a.fat_g + (f.fat_g ?? 0), fiber_g: a.fiber_g + (f.fiber_g ?? 0) }), { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0 })
-      return acc + mm.calories
-    }, 0),
-    protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0,
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
+    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-24 space-y-4">
       {/* Header */}
       <div>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-white">{day.label ?? new Date(today + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long' })}</h2>
-            <p className="text-xs text-[#737373]">{plan.name}</p>
+        <h2 className="text-lg font-bold text-white capitalize">{dateLabel}</h2>
+        {activePlan && <p className="text-xs text-[#737373] mt-0.5">Plano: {activePlan.name}</p>}
+      </div>
+
+      {/* Summary */}
+      {(totals.calories > 0 || target) && (
+        <div className="bg-[#1a1a1a] rounded-2xl p-4">
+          <div className="flex justify-between items-center mb-3">
+            <p className="text-xs text-[#737373] font-semibold uppercase tracking-wider">Consumido hoje</p>
+            <p className="text-2xl font-bold text-white">
+              {Math.round(totals.calories)}
+              {target && <span className="text-sm font-normal text-[#737373]"> / {target} kcal</span>}
+            </p>
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold text-white">{Math.round(macros.calories)}</p>
-            <p className="text-xs text-[#737373]">kcal planeadas</p>
+          <MacroBar macros={totals} target={target} />
+          <div className="grid grid-cols-4 gap-2 mt-3">
+            {[
+              { label: 'Proteína', val: Math.round(totals.protein_g), color: 'text-[#60a5fa]' },
+              { label: 'Carboidratos', val: Math.round(totals.carbs_g), color: 'text-[#f97316]' },
+              { label: 'Gordura', val: Math.round(totals.fat_g), color: 'text-[#a78bfa]' },
+              { label: 'Fibra', val: Math.round(totals.fiber_g), color: 'text-[#14b8a6]' },
+            ].map(({ label, val, color }) => (
+              <div key={label} className="bg-[#0f0f0f] rounded-xl p-2 text-center">
+                <p className={`text-sm font-bold ${color}`}>{val}g</p>
+                <p className="text-[9px] text-[#525252] leading-tight mt-0.5">{label}</p>
+              </div>
+            ))}
           </div>
         </div>
-        {day.notes && <p className="text-xs text-[#737373] mt-1 italic">{day.notes}</p>}
-      </div>
-
-      {/* Macros overview */}
-      <div className="bg-[#1a1a1a] rounded-2xl p-4">
-        <div className="flex justify-between items-center mb-3">
-          <p className="text-xs text-[#737373] font-semibold uppercase tracking-wider">Totais do dia</p>
-          <p className="text-xs text-[#737373]">{completedMeals}/{day.meals.length} refeições</p>
-        </div>
-        <MacroBar macros={macros} target={plan.daily_calories_target} />
-
-        <div className="grid grid-cols-4 gap-2 mt-3">
-          {[
-            { label: 'Proteína', val: Math.round(macros.protein_g), unit: 'g', color: 'text-[#60a5fa]' },
-            { label: 'Carboidratos', val: Math.round(macros.carbs_g), unit: 'g', color: 'text-[#f97316]' },
-            { label: 'Gordura', val: Math.round(macros.fat_g), unit: 'g', color: 'text-[#a78bfa]' },
-            { label: 'Fibra', val: Math.round(macros.fiber_g), unit: 'g', color: 'text-[#14b8a6]' },
-          ].map(({ label, val, unit, color }) => (
-            <div key={label} className="bg-[#0f0f0f] rounded-xl p-2 text-center">
-              <p className={`text-sm font-bold ${color}`}>{val}{unit}</p>
-              <p className="text-[9px] text-[#525252] leading-tight mt-0.5">{label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Meals */}
-      <div className="space-y-2">
-        {[...day.meals].sort((a, b) => a.order - b.order).map(meal => (
-          <MealCard
-            key={meal.id}
-            meal={meal}
-            completed={isCompleted(meal.id)}
-            onToggle={() => toggle(meal.id, meal.name)}
-          />
-        ))}
-      </div>
-
-      {completedMacros.calories > 0 && (
-        <p className="text-center text-xs text-[#737373]">
-          {Math.round(completedMacros.calories)} kcal consumidas
-        </p>
       )}
+
+      {/* Today's entries */}
+      {entries.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs text-[#737373] uppercase tracking-wider font-semibold">Registado hoje</p>
+          {entries.map(entry => {
+            const m = entryMacros(entry)
+            const catLabel = MEAL_CATEGORIES.find(c => c.id === entry.category)?.label
+            return (
+              <div key={entry.id} className="bg-[#1a1a1a] rounded-2xl px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-white truncate">{entry.name}</p>
+                      <span className="text-sm font-bold text-white flex-shrink-0">{Math.round(m.calories)} kcal</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] text-[#525252]">{catLabel}</span>
+                      {entry.time && (
+                        <span className="flex items-center gap-0.5 text-[10px] text-[#525252]">
+                          <Clock size={9} />{entry.time}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1.5">
+                      <MacroBar macros={m} compact />
+                    </div>
+                    <div className="flex gap-3 mt-1">
+                      <span className="text-[10px] text-[#60a5fa]">P {Math.round(m.protein_g)}g</span>
+                      <span className="text-[10px] text-[#f97316]">C {Math.round(m.carbs_g)}g</span>
+                      <span className="text-[10px] text-[#a78bfa]">G {Math.round(m.fat_g)}g</span>
+                    </div>
+                  </div>
+                  <button onClick={() => removeEntry(entry.id)} className="p-1.5 text-[#525252] hover:text-red-400 flex-shrink-0">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Plan suggestions */}
+      {unloggedSuggestions.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs text-[#737373] uppercase tracking-wider font-semibold">Sugerido pelo plano</p>
+          {unloggedSuggestions.map(t => {
+            const m = entryMacros(t)
+            return (
+              <button key={t.id} onClick={() => setShowLogger(true)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-[#1a1a1a] rounded-2xl opacity-60 border border-dashed border-[#2e2e2e]">
+                <div className="text-left">
+                  <p className="text-sm text-white">{t.name}</p>
+                  <p className="text-[10px] text-[#525252]">{Math.round(m.calories)} kcal · {MEAL_CATEGORIES.find(c => c.id === t.category)?.label}</p>
+                </div>
+                <Plus size={16} className="text-[#525252]" />
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {entries.length === 0 && unloggedSuggestions.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="w-14 h-14 bg-[#1a1a1a] rounded-full flex items-center justify-center mb-3">
+            <Utensils size={24} className="text-[#22c55e]" />
+          </div>
+          <p className="text-white font-semibold">Sem registos hoje</p>
+          <p className="text-[#737373] text-sm mt-1">Toca no + para registar uma refeição</p>
+        </div>
+      )}
+
+      {/* FAB */}
+      <button
+        onClick={() => setShowLogger(true)}
+        className="fixed bottom-20 right-4 w-14 h-14 bg-[#22c55e] rounded-full flex items-center justify-center shadow-lg"
+      >
+        <Plus size={24} className="text-white" />
+      </button>
     </div>
   )
 }
