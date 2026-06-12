@@ -111,7 +111,6 @@ export default function App() {
             plans={nutritionPlans}
             macroTargets={profile.macro_targets}
             onSaveLog={saveNutritionLog}
-            onDeleteLog={deleteNutritionLog}
             onSaveTemplate={saveTemplate}
             onDeleteTemplate={deleteTemplate}
             onImportTemplates={importTemplates}
@@ -124,9 +123,13 @@ export default function App() {
           <ProfilePage
             macroTargets={profile.macro_targets}
             weightEntries={profile.weight_entries}
+            nutritionLogs={nutritionLogs}
+            nutritionPlans={nutritionPlans}
+            today={TODAY}
             onSaveMacroTargets={saveMacroTargets}
             onAddWeightEntry={addWeightEntry}
             onDeleteWeightEntry={deleteWeightEntry}
+            onDeleteNutritionLog={deleteNutritionLog}
           />
         )}
       </main>
