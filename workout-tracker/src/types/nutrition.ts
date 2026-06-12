@@ -71,6 +71,20 @@ export interface NutritionPlan {
   days: PlanDay[]
 }
 
+// Per-date override of a plan's template list
+export interface DayOverride {
+  date: string           // 'YYYY-MM-DD'
+  template_ids: string[]
+}
+
+// Associates a specific week with a plan (and optional per-day overrides)
+export interface WeekAssignment {
+  id: string
+  week_start: string     // 'YYYY-MM-DD' — first day of the week (Mon or Sun)
+  plan_id?: string       // undefined = no plan for this week
+  day_overrides: DayOverride[]
+}
+
 // Import/export envelope (v2)
 export interface NutritionImport {
   version: 2

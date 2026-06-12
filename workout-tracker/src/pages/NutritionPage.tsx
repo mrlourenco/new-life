@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { MealTemplate, DayNutritionLog, NutritionPlan } from '../types/nutrition'
+import type { MealTemplate, DayNutritionLog, NutritionPlan, WeekAssignment } from '../types/nutrition'
 import type { MacroTargets } from '../types/profile'
 import NutritionTodayPage from './nutrition/NutritionTodayPage'
 import NutritionWeekPage from './nutrition/NutritionWeekPage'
@@ -13,6 +13,7 @@ interface Props {
   templates: MealTemplate[]
   logs: DayNutritionLog[]
   plans: NutritionPlan[]
+  assignments: WeekAssignment[]
   macroTargets: MacroTargets
   weekStartDay: 0 | 1
   onSaveLog: (log: DayNutritionLog) => void
@@ -21,7 +22,8 @@ interface Props {
   onImportTemplates: (templates: MealTemplate[]) => void
   onSavePlan: (plan: NutritionPlan) => void
   onDeletePlan: (id: string) => void
-  onActivatePlan: (id: string | null) => void
+  onAssignPlan: (weekStart: string, planId: string | null) => void
+  onSaveDayOverride: (weekStart: string, date: string, templateIds: string[]) => void
 }
 
 const TABS: { id: NutritionTab; label: string }[] = [
@@ -32,9 +34,9 @@ const TABS: { id: NutritionTab; label: string }[] = [
 ]
 
 export default function NutritionPage({
-  today, templates, logs, plans, macroTargets, weekStartDay,
+  today, templates, logs, plans, assignments, macroTargets, weekStartDay,
   onSaveLog, onSaveTemplate, onDeleteTemplate, onImportTemplates,
-  onSavePlan, onDeletePlan, onActivatePlan,
+  onSavePlan, onDeletePlan, onAssignPlan, onSaveDayOverride,
 }: Props) {
   const [tab, setTab] = useState<NutritionTab>('today')
 
@@ -55,6 +57,7 @@ export default function NutritionPage({
         {tab === 'today' && (
           <NutritionTodayPage
             today={today} templates={templates} logs={logs} plans={plans}
+            assignments={assignments} weekStartDay={weekStartDay}
             macroTargets={macroTargets}
             onSaveLog={onSaveLog} onSaveTemplate={onSaveTemplate}
           />
@@ -62,6 +65,9 @@ export default function NutritionPage({
         {tab === 'week' && (
           <NutritionWeekPage
             today={today} plans={plans} templates={templates} weekStartDay={weekStartDay}
+            assignments={assignments}
+            onAssignPlan={onAssignPlan}
+            onSaveDayOverride={onSaveDayOverride}
           />
         )}
         {tab === 'library' && (
@@ -72,7 +78,7 @@ export default function NutritionPage({
         {tab === 'plans' && (
           <NutritionPlansPage
             plans={plans} templates={templates} logs={logs}
-            onSave={onSavePlan} onDelete={onDeletePlan} onActivate={onActivatePlan}
+            onSave={onSavePlan} onDelete={onDeletePlan}
             onImportTemplates={onImportTemplates}
           />
         )}

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { usePlans, useLogs, useActiveWorkout, useExerciseHistory } from './hooks/useStore'
 import { useMealTemplates, useNutritionLogs, useNutritionPlans } from './hooks/useNutritionStore'
+import { useWeekAssignments } from './hooks/useWeekAssignments'
 import { useProfileStore } from './hooks/useProfileStore'
 import BottomNav, { type Tab } from './components/BottomNav'
 import ActiveWorkoutView from './components/ActiveWorkoutView'
@@ -25,7 +26,8 @@ export default function App() {
   // Nutrition
   const { templates, saveTemplate, deleteTemplate, importTemplates } = useMealTemplates()
   const { logs: nutritionLogs, saveLog: saveNutritionLog, deleteLog: deleteNutritionLog } = useNutritionLogs()
-  const { plans: nutritionPlans, savePlan, deletePlan: deletePlanN, setActivePlan } = useNutritionPlans()
+  const { plans: nutritionPlans, savePlan, deletePlan: deletePlanN } = useNutritionPlans()
+  const { assignments, assignPlanToWeek, saveDayOverride } = useWeekAssignments()
   const { profile, saveMacroTargets, saveWeekStartDay, addWeightEntry, deleteWeightEntry } = useProfileStore()
 
   const handleStart = (plan: WorkoutPlan, session: WorkoutSession) => {
@@ -109,6 +111,7 @@ export default function App() {
             templates={templates}
             logs={nutritionLogs}
             plans={nutritionPlans}
+            assignments={assignments}
             macroTargets={profile.macro_targets}
             weekStartDay={profile.week_start_day}
             onSaveLog={saveNutritionLog}
@@ -117,7 +120,8 @@ export default function App() {
             onImportTemplates={importTemplates}
             onSavePlan={savePlan}
             onDeletePlan={deletePlanN}
-            onActivatePlan={setActivePlan}
+            onAssignPlan={assignPlanToWeek}
+            onSaveDayOverride={saveDayOverride}
           />
         )}
         {tab === 'profile' && (
