@@ -1,34 +1,14 @@
 import { useState } from 'react'
-import { Plus, Trash2, ChevronDown, ChevronUp, X, Check } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import type { WorkoutPlan, WorkoutSession, Exercise } from '../types/workout'
+import Field from './workout/Field'
+import SessionEditor from './workout/SessionEditor'
+import { GOALS, inputCls } from './workout/planBuilderConstants'
 
 interface Props {
   onSave: (plan: WorkoutPlan) => void
   onCancel: () => void
 }
-
-const GOALS = [
-  { value: 'hypertrophy', label: 'Hipertrofia' },
-  { value: 'strength', label: 'Força' },
-  { value: 'endurance', label: 'Resistência' },
-  { value: 'general', label: 'Geral' },
-]
-
-const MUSCLES = ['chest', 'back', 'legs', 'shoulders', 'biceps', 'triceps', 'core', 'glutes', 'cardio']
-const EQUIPMENT = ['barbell', 'dumbbells', 'cable', 'machine', 'bodyweight', 'bands', 'kettlebell']
-const CARDIO_EQUIPMENT = ['none', 'treadmill', 'bike', 'rower', 'elliptical', 'outdoor', 'other']
-const CARDIO_EQUIPMENT_LABELS: Record<string, string> = {
-  none: 'Sem equipamento',
-  treadmill: 'Passadeira',
-  bike: 'Bicicleta',
-  rower: 'Remo',
-  elliptical: 'Elíptica',
-  outdoor: 'Ao ar livre',
-  other: 'Outro',
-}
-
-function isCardio(muscle: string) { return muscle === 'cardio' }
-const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
 function uid() {
   return Math.random().toString(36).slice(2, 9)
@@ -202,153 +182,20 @@ export default function PlanBuilder({ onSave, onCancel }: Props) {
         {step === 'sessions' && (
           <>
             {sessions.map((sess, si) => (
-              <div key={sess.id} className="bg-[#1a1a1a] rounded-2xl overflow-hidden">
-                <div className="flex items-center gap-2 px-4 py-3">
-                  <button
-                    className="flex-1 text-left"
-                    onClick={() => setExpandedSession(expandedSession === sess.id ? '' : sess.id)}
-                  >
-                    <p className="text-white font-medium text-sm">
-                      {sess.name || `Sessão ${si + 1}`}
-                    </p>
-                    <p className="text-[#525252] text-xs">{sess.exercises.length} exercícios</p>
-                  </button>
-                  {sessions.length > 1 && (
-                    <button onClick={() => removeSession(sess.id)} className="p-1.5 text-[#525252] hover:text-red-400">
-                      <Trash2 size={15} />
-                    </button>
-                  )}
-                  <button onClick={() => setExpandedSession(expandedSession === sess.id ? '' : sess.id)} className="p-1.5 text-[#525252]">
-                    {expandedSession === sess.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </button>
-                </div>
-
-                {expandedSession === sess.id && (
-                  <div className="border-t border-[#2e2e2e] px-4 py-4 space-y-4">
-                    <Field label="Nome da sessão *">
-                      <input value={sess.name} onChange={e => updateSession(sess.id, { name: e.target.value })} placeholder="ex: Push A" className={inputCls} />
-                    </Field>
-
-                    <Field label="Dia da semana">
-                      <div className="flex flex-wrap gap-1.5">
-                        {DAYS.map((d, i) => (
-                          <button
-                            key={i}
-                            onClick={() => updateSession(sess.id, { day_of_week: sess.day_of_week === i ? undefined : i })}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${sess.day_of_week === i ? 'bg-[#f97316] text-white' : 'bg-[#0f0f0f] text-[#737373] border border-[#2e2e2e]'}`}
-                          >
-                            {d.slice(0, 3)}
-                          </button>
-                        ))}
-                      </div>
-                    </Field>
-
-                    <Field label="Grupos musculares">
-                      <div className="flex flex-wrap gap-1.5">
-                        {MUSCLES.map(m => {
-                          const active = sess.muscle_groups.includes(m)
-                          return (
-                            <button
-                              key={m}
-                              onClick={() => toggleMuscle(sess.id, m)}
-                              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors capitalize ${active ? 'bg-[#f97316]/20 text-[#f97316] border border-[#f97316]/40' : 'bg-[#0f0f0f] text-[#737373] border border-[#2e2e2e]'}`}
-                            >
-                              {active && <Check size={10} className="inline mr-1" />}{m}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </Field>
-
-                    {/* Exercises */}
-                    <p className="text-xs text-[#737373] font-semibold uppercase tracking-wider">Exercícios</p>
-                    {sess.exercises.map((ex, ei) => (
-                      <div key={ex.id} className="bg-[#0f0f0f] rounded-xl p-3 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-[#f97316] font-semibold">#{ei + 1}</span>
-                          {sess.exercises.length > 1 && (
-                            <button onClick={() => removeExercise(sess.id, ex.id)} className="p-1 text-[#525252] hover:text-red-400">
-                              <Trash2 size={13} />
-                            </button>
-                          )}
-                        </div>
-
-                        <input
-                          value={ex.name}
-                          onChange={e => updateExercise(sess.id, ex.id, { name: e.target.value })}
-                          placeholder="Nome do exercício *"
-                          className={inputCls}
-                        />
-
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            <p className="text-[10px] text-[#737373] mb-1">Séries</p>
-                            <input type="number" min={1} value={ex.sets} onChange={e => updateExercise(sess.id, ex.id, { sets: parseInt(e.target.value) || 1 })} className={inputCls + ' text-center'} />
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-[#737373] mb-1">Reps</p>
-                            <input value={ex.reps} onChange={e => updateExercise(sess.id, ex.id, { reps: e.target.value })} placeholder="10-12" className={inputCls + ' text-center'} />
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-[#737373] mb-1">Descanso (s)</p>
-                            <input type="number" min={0} value={ex.rest_seconds} onChange={e => updateExercise(sess.id, ex.id, { rest_seconds: parseInt(e.target.value) || 60 })} className={inputCls + ' text-center'} />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <p className="text-[10px] text-[#737373] mb-1">Tipo</p>
-                            <select
-                              value={ex.muscle}
-                              onChange={e => {
-                                const muscle = e.target.value
-                                const defaultEq = isCardio(muscle) ? 'none' : 'barbell'
-                                updateExercise(sess.id, ex.id, { muscle, equipment: defaultEq })
-                              }}
-                              className={inputCls}
-                            >
-                              {MUSCLES.map(m => <option key={m} value={m}>{m}</option>)}
-                            </select>
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-[#737373] mb-1">Equipamento</p>
-                            {isCardio(ex.muscle) ? (
-                              <select value={ex.equipment} onChange={e => updateExercise(sess.id, ex.id, { equipment: e.target.value })} className={inputCls}>
-                                {CARDIO_EQUIPMENT.map(eq => <option key={eq} value={eq}>{CARDIO_EQUIPMENT_LABELS[eq]}</option>)}
-                              </select>
-                            ) : (
-                              <select value={ex.equipment} onChange={e => updateExercise(sess.id, ex.id, { equipment: e.target.value })} className={inputCls}>
-                                {EQUIPMENT.map(eq => <option key={eq} value={eq}>{eq}</option>)}
-                              </select>
-                            )}
-                          </div>
-                        </div>
-
-                        <input
-                          value={ex.notes ?? ''}
-                          onChange={e => updateExercise(sess.id, ex.id, { notes: e.target.value || undefined })}
-                          placeholder="Notas técnicas (opcional)"
-                          className={inputCls}
-                        />
-                        <input
-                          value={ex.weight_suggestion ?? ''}
-                          onChange={e => updateExercise(sess.id, ex.id, { weight_suggestion: e.target.value || undefined })}
-                          placeholder="Carga sugerida (ex: 70% 1RM)"
-                          className={inputCls}
-                        />
-                      </div>
-                    ))}
-
-                    <button
-                      onClick={() => addExercise(sess.id)}
-                      className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#2e2e2e] rounded-xl text-[#737373] text-xs hover:border-[#f97316]/50 hover:text-[#f97316] transition-colors"
-                    >
-                      <Plus size={14} />
-                      Adicionar exercício
-                    </button>
-                  </div>
-                )}
-              </div>
+              <SessionEditor
+                key={sess.id}
+                session={sess}
+                index={si}
+                expanded={expandedSession === sess.id}
+                canRemove={sessions.length > 1}
+                onToggleExpand={() => setExpandedSession(expandedSession === sess.id ? '' : sess.id)}
+                onRemove={() => removeSession(sess.id)}
+                onUpdate={patch => updateSession(sess.id, patch)}
+                onToggleMuscle={muscle => toggleMuscle(sess.id, muscle)}
+                onUpdateExercise={(exId, patch) => updateExercise(sess.id, exId, patch)}
+                onRemoveExercise={exId => removeExercise(sess.id, exId)}
+                onAddExercise={() => addExercise(sess.id)}
+              />
             ))}
 
             <button
@@ -361,17 +208,6 @@ export default function PlanBuilder({ onSave, onCancel }: Props) {
           </>
         )}
       </div>
-    </div>
-  )
-}
-
-const inputCls = 'w-full bg-[#1a1a1a] border border-[#2e2e2e] rounded-lg px-3 py-2 text-sm text-white focus:border-[#f97316] focus:outline-none placeholder:text-[#525252]'
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-xs text-[#737373] font-semibold">{label}</label>
-      {children}
     </div>
   )
 }

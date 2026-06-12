@@ -1,10 +1,14 @@
 import { useState, useCallback, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Check, X, Trophy, Clock, ChevronDown, ChevronUp, History } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, Trophy, Clock, ChevronDown, ChevronUp } from 'lucide-react'
 import type { ActiveWorkout, SetLog } from '../types/workout'
 import { useRestTimer } from '../hooks/useRestTimer'
 import RestTimerOverlay from './RestTimerOverlay'
 import { muscleLabel, equipmentLabel } from '../utils/labels'
+import { formatElapsedSince } from '../utils/format'
 import type { ExerciseHistory } from '../hooks/useStore'
+import ExerciseNav from './workout/ExerciseNav'
+import ExerciseHistoryCard from './workout/ExerciseHistoryCard'
+import SetRow from './workout/SetRow'
 
 interface Props {
   active: ActiveWorkout
@@ -14,22 +18,13 @@ interface Props {
   exerciseHistory: Map<string, ExerciseHistory>
 }
 
-function formatDuration(startedAt: string) {
-  const diff = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)
-  const h = Math.floor(diff / 3600)
-  const m = Math.floor((diff % 3600) / 60)
-  const s = diff % 60
-  if (h > 0) return `${h}h ${m.toString().padStart(2, '0')}m`
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
-
 export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscard, exerciseHistory }: Props) {
   const timer = useRestTimer()
-  const [elapsed, setElapsed] = useState(() => formatDuration(active.log.started_at))
+  const [elapsed, setElapsed] = useState(() => formatElapsedSince(active.log.started_at))
   const [expanded, setExpanded] = useState<string | null>(null)
 
   useEffect(() => {
-    const interval = setInterval(() => setElapsed(formatDuration(active.log.started_at)), 1000)
+    const interval = setInterval(() => setElapsed(formatElapsedSince(active.log.started_at)), 1000)
     return () => clearInterval(interval)
   }, [active.log.started_at])
 
@@ -126,28 +121,12 @@ export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscar
       </div>
 
       {/* Exercise list (collapsed overview) */}
-      <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar">
-        {active.session.exercises.map((e, i) => {
-          const done = active.log.exercises[i].sets.every(s => s.completed)
-          const isCurrent = i === active.current_exercise_index
-          return (
-            <button
-              key={e.id}
-              onClick={() => goToExercise(i)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                isCurrent
-                  ? 'bg-[#f97316] text-white'
-                  : done
-                  ? 'bg-[#1a3320] text-[#4ade80]'
-                  : 'bg-[#1a1a1a] text-[#a3a3a3]'
-              }`}
-            >
-              {done && !isCurrent ? <Check size={10} className="inline mr-1" /> : null}
-              {e.name.split(' ').slice(0, 2).join(' ')}
-            </button>
-          )
-        })}
-      </div>
+      <ExerciseNav
+        exercises={active.session.exercises}
+        exerciseLogs={active.log.exercises}
+        currentIndex={active.current_exercise_index}
+        onSelect={goToExercise}
+      />
 
       {/* Main exercise */}
       <div className="flex-1 overflow-y-auto px-4 pb-8">
@@ -204,32 +183,7 @@ export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscar
         </div>
 
         {/* Sets table */}
-        {(() => {
-          const hist = exerciseHistory.get(ex.name.toLowerCase().trim())
-          if (hist) {
-            const completedSets = hist.sets.filter(s => s.weight_kg || s.reps_done)
-            if (completedSets.length > 0) {
-              return (
-                <div className="flex items-start gap-2 px-3 py-2 bg-[#0d1f0f] rounded-xl mb-2">
-                  <History size={13} className="text-[#4ade80] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-[10px] text-[#4ade80] font-semibold mb-1">
-                      Última sessão · {new Date(hist.date).toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' })}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {completedSets.map((s, i) => (
-                        <span key={i} className="text-[10px] text-[#737373]">
-                          S{s.set_number}: {s.weight_kg ? `${s.weight_kg}kg` : '—'} × {s.reps_done ?? '—'}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )
-            }
-          }
-          return null
-        })()}
+        <ExerciseHistoryCard history={exerciseHistory.get(ex.name.toLowerCase().trim())} />
 
         <div className="bg-[#1a1a1a] rounded-2xl overflow-hidden">
           <div className="grid grid-cols-[40px_1fr_1fr_48px] gap-2 px-4 py-2 border-b border-[#2e2e2e]">
@@ -240,43 +194,15 @@ export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscar
           </div>
 
           {exLog.sets.map((s, i) => (
-            <div
+            <SetRow
               key={i}
-              className={`grid grid-cols-[40px_1fr_1fr_48px] gap-2 items-center px-4 py-3 border-b border-[#2e2e2e] last:border-0 transition-colors ${s.completed ? 'bg-[#0f2318]' : ''}`}
-            >
-              <span className={`text-sm font-bold ${s.completed ? 'text-[#4ade80]' : 'text-[#737373]'}`}>
-                {s.completed ? <Check size={16} /> : i + 1}
-              </span>
-              <input
-                type="number"
-                min="0"
-                step="0.5"
-                value={s.weight_kg ?? ''}
-                onChange={e => updateSet(i, 'weight_kg', parseFloat(e.target.value) || 0)}
-                disabled={s.completed}
-                placeholder="—"
-                className="w-full bg-[#0f0f0f] rounded-lg px-2 py-2 text-sm text-white text-center disabled:opacity-40 border border-[#2e2e2e] focus:border-[#f97316] focus:outline-none"
-              />
-              <input
-                type="number"
-                min="0"
-                value={s.reps_done ?? ''}
-                onChange={e => updateSet(i, 'reps_done', parseInt(e.target.value) || 0)}
-                disabled={s.completed}
-                placeholder={s.reps_target}
-                className="w-full bg-[#0f0f0f] rounded-lg px-2 py-2 text-sm text-white text-center disabled:opacity-40 border border-[#2e2e2e] focus:border-[#f97316] focus:outline-none"
-              />
-              <button
-                onClick={() => s.completed ? uncompleteSet(i) : completeSet(i, ex.rest_seconds)}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                  s.completed
-                    ? 'bg-[#166534] text-[#4ade80]'
-                    : 'bg-[#f97316] text-white hover:bg-[#ea6c0a]'
-                }`}
-              >
-                <Check size={18} />
-              </button>
-            </div>
+              set={s}
+              index={i}
+              restSeconds={ex.rest_seconds}
+              onUpdateSet={updateSet}
+              onCompleteSet={completeSet}
+              onUncompleteSet={uncompleteSet}
+            />
           ))}
         </div>
 
