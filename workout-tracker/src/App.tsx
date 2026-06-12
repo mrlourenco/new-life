@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { usePlans, useLogs, useActiveWorkout } from './hooks/useStore'
+import { usePlans, useLogs, useActiveWorkout, useExerciseHistory } from './hooks/useStore'
 import BottomNav, { type Tab } from './components/BottomNav'
 import ActiveWorkoutView from './components/ActiveWorkoutView'
 import TodayPage from './pages/TodayPage'
@@ -14,6 +14,7 @@ export default function App() {
   const { plans, addPlan, deletePlan } = usePlans()
   const { logs, addLog, deleteLog } = useLogs()
   const { active, startWorkout, updateActive, clearActive } = useActiveWorkout()
+  const exerciseHistory = useExerciseHistory(logs)
 
   const handleStart = (plan: WorkoutPlan, session: WorkoutSession) => {
     const now = new Date().toISOString()
@@ -65,6 +66,7 @@ export default function App() {
           onUpdate={updateActive}
           onFinish={handleFinish}
           onDiscard={handleDiscard}
+          exerciseHistory={exerciseHistory}
         />
       </div>
     )

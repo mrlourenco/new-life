@@ -1,14 +1,16 @@
 import { useState, useCallback, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Check, X, Trophy, Clock, ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, Trophy, Clock, ChevronDown, ChevronUp, History } from 'lucide-react'
 import type { ActiveWorkout, SetLog } from '../types/workout'
 import { useRestTimer } from '../hooks/useRestTimer'
 import RestTimerOverlay from './RestTimerOverlay'
+import type { ExerciseHistory } from '../hooks/useStore'
 
 interface Props {
   active: ActiveWorkout
   onUpdate: (w: ActiveWorkout) => void
   onFinish: (w: ActiveWorkout) => void
   onDiscard: () => void
+  exerciseHistory: Map<string, ExerciseHistory>
 }
 
 function formatDuration(startedAt: string) {
@@ -20,7 +22,7 @@ function formatDuration(startedAt: string) {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscard }: Props) {
+export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscard, exerciseHistory }: Props) {
   const timer = useRestTimer()
   const [elapsed, setElapsed] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -202,6 +204,33 @@ export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscar
         </div>
 
         {/* Sets table */}
+        {(() => {
+          const hist = exerciseHistory.get(ex.name.toLowerCase().trim())
+          if (hist) {
+            const completedSets = hist.sets.filter(s => s.weight_kg || s.reps_done)
+            if (completedSets.length > 0) {
+              return (
+                <div className="flex items-start gap-2 px-3 py-2 bg-[#0d1f0f] rounded-xl mb-2">
+                  <History size={13} className="text-[#4ade80] mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-[10px] text-[#4ade80] font-semibold mb-1">
+                      Última sessão · {new Date(hist.date).toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' })}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {completedSets.map((s, i) => (
+                        <span key={i} className="text-[10px] text-[#737373]">
+                          S{s.set_number}: {s.weight_kg ? `${s.weight_kg}kg` : '—'} × {s.reps_done ?? '—'}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+          }
+          return null
+        })()}
+
         <div className="bg-[#1a1a1a] rounded-2xl overflow-hidden">
           <div className="grid grid-cols-[40px_1fr_1fr_48px] gap-2 px-4 py-2 border-b border-[#2e2e2e]">
             <span className="text-xs text-[#737373] font-semibold">#</span>
