@@ -4,9 +4,7 @@ import { useMealTemplates, useNutritionLogs, useNutritionPlans } from './hooks/u
 import { useProfileStore } from './hooks/useProfileStore'
 import BottomNav, { type Tab } from './components/BottomNav'
 import ActiveWorkoutView from './components/ActiveWorkoutView'
-import TodayPage from './pages/TodayPage'
-import HistoryPage from './pages/HistoryPage'
-import PlansPage from './pages/PlansPage'
+import WorkoutPage, { type WorkoutTab } from './pages/WorkoutPage'
 import NutritionPage from './pages/NutritionPage'
 import ProfilePage from './pages/ProfilePage'
 import type { WorkoutPlan, WorkoutSession, ActiveWorkout } from './types/workout'
@@ -14,7 +12,8 @@ import type { WorkoutPlan, WorkoutSession, ActiveWorkout } from './types/workout
 const TODAY = new Date().toISOString().slice(0, 10)
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('today')
+  const [tab, setTab] = useState<Tab>('workout')
+  const [workoutTab, setWorkoutTab] = useState<WorkoutTab>('hoje')
   const [showActive, setShowActive] = useState(false)
 
   // Workout
@@ -62,7 +61,8 @@ export default function App() {
     addLog(workout.log)
     clearActive()
     setShowActive(false)
-    setTab('history')
+    setTab('workout')
+    setWorkoutTab('historico')
   }
 
   const handleDiscard = () => {
@@ -89,14 +89,19 @@ export default function App() {
   return (
     <div className="h-full flex flex-col max-w-md mx-auto">
       <main className="flex-1 flex flex-col overflow-hidden">
-        {tab === 'today' && (
-          <TodayPage plans={plans} active={active} onStart={handleStart} onResume={() => setShowActive(true)} />
-        )}
-        {tab === 'history' && (
-          <HistoryPage logs={logs} onDelete={deleteLog} />
-        )}
-        {tab === 'plans' && (
-          <PlansPage plans={plans} onAdd={addPlan} onDelete={deletePlan} />
+        {tab === 'workout' && (
+          <WorkoutPage
+            tab={workoutTab}
+            onTabChange={setWorkoutTab}
+            plans={plans}
+            active={active}
+            logs={logs}
+            onStart={handleStart}
+            onResume={() => setShowActive(true)}
+            onAddPlan={addPlan}
+            onDeletePlan={deletePlan}
+            onDeleteLog={deleteLog}
+          />
         )}
         {tab === 'nutrition' && (
           <NutritionPage
