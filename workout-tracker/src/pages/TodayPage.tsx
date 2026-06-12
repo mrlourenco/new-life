@@ -1,5 +1,6 @@
 import { Play, Zap } from 'lucide-react'
 import type { WorkoutPlan, WorkoutSession, ActiveWorkout } from '../types/workout'
+import { muscleLabel } from '../utils/labels'
 
 interface Props {
   plans: WorkoutPlan[]
@@ -121,7 +122,7 @@ function SessionCard({ plan, session, onStart, compact = false }: {
             <>
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {session.muscle_groups.map(m => (
-                  <span key={m} className={`text-[10px] px-2 py-0.5 rounded-full capitalize ${muscleClass(m)}`}>{m}</span>
+                  <span key={m} className={`text-[10px] px-2 py-0.5 rounded-full ${muscleClass(m)}`}>{muscleLabel(m)}</span>
                 ))}
               </div>
               <p className="text-[#525252] text-xs mt-2">{session.exercises.length} exercícios</p>

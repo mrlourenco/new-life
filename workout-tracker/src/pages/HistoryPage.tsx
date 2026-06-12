@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Trash2, Clock, Trophy, TrendingUp, ChevronRight, X, Check, Minus } from 'lucide-react'
 import type { WorkoutLog } from '../types/workout'
+import { muscleLabel } from '../utils/labels'
 
 interface Props {
   logs: WorkoutLog[]
@@ -87,7 +88,7 @@ function WorkoutDetail({ log, onClose, onDelete }: { log: WorkoutLog; onClose: (
                     {completedCount}/{ex.sets.length} séries
                   </span>
                 </div>
-                <p className="text-[#525252] text-xs mt-0.5 capitalize">{ex.muscle}</p>
+                <p className="text-[#525252] text-xs mt-0.5">{muscleLabel(ex.muscle)}</p>
                 {ex.notes && (
                   <p className="text-[#737373] text-xs mt-1.5 italic">"{ex.notes}"</p>
                 )}
