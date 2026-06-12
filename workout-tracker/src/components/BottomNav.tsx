@@ -1,6 +1,6 @@
-import { Dumbbell, History, ClipboardList, Utensils } from 'lucide-react'
+import { Dumbbell, History, ClipboardList, Utensils, UserCircle } from 'lucide-react'
 
-export type Tab = 'today' | 'history' | 'plans' | 'nutrition'
+export type Tab = 'today' | 'history' | 'plans' | 'nutrition' | 'profile'
 
 interface Props {
   tab: Tab
@@ -13,6 +13,7 @@ const TABS = [
   { id: 'history' as Tab, label: 'Histórico', Icon: History },
   { id: 'plans' as Tab, label: 'Planos', Icon: ClipboardList },
   { id: 'nutrition' as Tab, label: 'Nutrição', Icon: Utensils },
+  { id: 'profile' as Tab, label: 'Perfil', Icon: UserCircle },
 ]
 
 export default function BottomNav({ tab, onChange, hasActive }: Props) {

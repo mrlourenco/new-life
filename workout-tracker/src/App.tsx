@@ -8,6 +8,7 @@ import TodayPage from './pages/TodayPage'
 import HistoryPage from './pages/HistoryPage'
 import PlansPage from './pages/PlansPage'
 import NutritionPage from './pages/NutritionPage'
+import ProfilePage from './pages/ProfilePage'
 import type { WorkoutPlan, WorkoutSession, ActiveWorkout } from './types/workout'
 
 const TODAY = new Date().toISOString().slice(0, 10)
@@ -104,7 +105,6 @@ export default function App() {
             logs={nutritionLogs}
             plans={nutritionPlans}
             macroTargets={profile.macro_targets}
-            weightEntries={profile.weight_entries}
             onSaveLog={saveNutritionLog}
             onDeleteLog={deleteNutritionLog}
             onSaveTemplate={saveTemplate}
@@ -113,6 +113,12 @@ export default function App() {
             onSavePlan={savePlan}
             onDeletePlan={deletePlanN}
             onActivatePlan={setActivePlan}
+          />
+        )}
+        {tab === 'profile' && (
+          <ProfilePage
+            macroTargets={profile.macro_targets}
+            weightEntries={profile.weight_entries}
             onSaveMacroTargets={saveMacroTargets}
             onAddWeightEntry={addWeightEntry}
             onDeleteWeightEntry={deleteWeightEntry}
