@@ -3,6 +3,8 @@ import { usePlans, useLogs, useActiveWorkout, useExerciseHistory } from './hooks
 import { useMealTemplates, useNutritionLogs, useNutritionPlans } from './hooks/useNutritionStore'
 import { useWeekAssignments } from './hooks/useWeekAssignments'
 import { useProfileStore } from './hooks/useProfileStore'
+import { useToday } from './hooks/useToday'
+import { localISODate } from './utils/dates'
 import BottomNav, { type Tab } from './components/BottomNav'
 import ActiveWorkoutView from './components/ActiveWorkoutView'
 import WorkoutPage, { type WorkoutTab } from './pages/WorkoutPage'
@@ -10,9 +12,8 @@ import NutritionPage from './pages/NutritionPage'
 import ProfilePage from './pages/ProfilePage'
 import type { WorkoutPlan, WorkoutSession, ActiveWorkout } from './types/workout'
 
-const TODAY = new Date().toISOString().slice(0, 10)
-
 export default function App() {
+  const today = useToday()
   const [tab, setTab] = useState<Tab>('workout')
   const [workoutTab, setWorkoutTab] = useState<WorkoutTab>('hoje')
   const [showActive, setShowActive] = useState(false)
@@ -38,7 +39,7 @@ export default function App() {
         session_id: session.id,
         plan_id: plan.id,
         session_name: session.name,
-        date: now.slice(0, 10),
+        date: localISODate(),
         started_at: now,
         exercises: session.exercises.map(ex => ({
           exercise_id: ex.id,
@@ -107,7 +108,7 @@ export default function App() {
         )}
         {tab === 'nutrition' && (
           <NutritionPage
-            today={TODAY}
+            today={today}
             templates={templates}
             logs={nutritionLogs}
             plans={nutritionPlans}
@@ -131,7 +132,7 @@ export default function App() {
             weekStartDay={profile.week_start_day}
             nutritionLogs={nutritionLogs}
             nutritionPlans={nutritionPlans}
-            today={TODAY}
+            today={today}
             onSaveMacroTargets={saveMacroTargets}
             onSaveWeekStartDay={saveWeekStartDay}
             onAddWeightEntry={addWeightEntry}

@@ -1,4 +1,5 @@
 import type { MealTemplate, MealEntry, DayNutritionLog, DayMacros, NutritionPlan, WeekAssignment } from '../types/nutrition'
+import { localISODate } from './dates'
 
 export function sumFoods(foods: { calories: number; protein_g?: number; carbs_g?: number; fat_g?: number; fiber_g?: number }[]): DayMacros {
   let calories = 0, protein_g = 0, carbs_g = 0, fat_g = 0, fiber_g = 0
@@ -45,7 +46,7 @@ export function getWeekDates(from: string, startDay: 0 | 1 = 1): string[] {
   return Array.from({ length: 7 }, (_, i) => {
     const dd = new Date(start)
     dd.setDate(start.getDate() + i)
-    return dd.toISOString().slice(0, 10)
+    return localISODate(dd)
   })
 }
 
@@ -111,7 +112,7 @@ export function generateShoppingItems(plan: NutritionPlan, templates: MealTempla
 export function getMonthDates(year: number, month: number): string[] {
   const days = new Date(year, month + 1, 0).getDate()
   return Array.from({ length: days }, (_, i) =>
-    new Date(year, month, i + 1).toISOString().slice(0, 10)
+    localISODate(new Date(year, month, i + 1))
   )
 }
 

@@ -70,11 +70,40 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
+function isValidTemplate(t: unknown): t is MealTemplate {
+  if (!t || typeof t !== 'object') return false
+  const tt = t as Record<string, unknown>
+  return typeof tt.id === 'string'
+    && typeof tt.name === 'string'
+    && Array.isArray(tt.foods)
+    && tt.foods.every((f: unknown) => {
+      if (!f || typeof f !== 'object') return false
+      const food = f as Record<string, unknown>
+      return typeof food.name === 'string' && typeof food.calories === 'number' && Number.isFinite(food.calories)
+    })
+}
+
+function isValidPlan(p: unknown): p is Omit<NutritionPlan, 'active'> {
+  if (!p || typeof p !== 'object') return false
+  const pp = p as Record<string, unknown>
+  return typeof pp.id === 'string'
+    && typeof pp.name === 'string'
+    && Array.isArray(pp.days)
+    && pp.days.every((d: unknown) => {
+      if (!d || typeof d !== 'object') return false
+      const dd = d as Record<string, unknown>
+      return typeof dd.day_of_week === 'number' && dd.day_of_week >= 0 && dd.day_of_week <= 6
+        && Array.isArray(dd.template_ids) && dd.template_ids.every(id => typeof id === 'string')
+    })
+}
+
 function validateImport(data: unknown): { templates?: MealTemplate[]; plan?: Omit<NutritionPlan, 'active'> } | null {
   if (!data || typeof data !== 'object') return null
   const d = data as Record<string, unknown>
   if (d.version !== 2) return null
-  return { templates: Array.isArray(d.templates) ? d.templates as MealTemplate[] : undefined, plan: d.plan as Omit<NutritionPlan, 'active'> | undefined }
+  if (d.templates !== undefined && (!Array.isArray(d.templates) || !d.templates.every(isValidTemplate))) return null
+  if (d.plan !== undefined && !isValidPlan(d.plan)) return null
+  return { templates: d.templates as MealTemplate[] | undefined, plan: d.plan as Omit<NutritionPlan, 'active'> | undefined }
 }
 
 export default function NutritionPlansPage({ plans, templates, logs, onSave, onDelete, onImportTemplates }: Props) {

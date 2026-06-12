@@ -10,12 +10,13 @@ interface Props {
   logs: DayNutritionLog[]
   plans: NutritionPlan[]
   today: string
+  weekStartDay: 0 | 1
   onDeleteLog: (id: string) => void
 }
 
 type View = 'week' | 'month' | 'day'
 
-export default function NutritionEvolutionPage({ logs, plans, today, onDeleteLog }: Props) {
+export default function NutritionEvolutionPage({ logs, plans, today, weekStartDay, onDeleteLog }: Props) {
   const [view, setView] = useState<View>('week')
   const [offset, setOffset] = useState(0)   // week/month offset from current
   const [detailDate, setDetailDate] = useState<string | null>(null)
@@ -100,7 +101,7 @@ export default function NutritionEvolutionPage({ logs, plans, today, onDeleteLog
 
   // Week view
   if (view === 'week') {
-    const weekDates = getWeekDates(refDate)
+    const weekDates = getWeekDates(refDate, weekStartDay)
     const weekStart = new Date(weekDates[0] + 'T12:00:00').toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' })
     const weekEnd = new Date(weekDates[6] + 'T12:00:00').toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' })
     const bars = weekDates.map(date => {

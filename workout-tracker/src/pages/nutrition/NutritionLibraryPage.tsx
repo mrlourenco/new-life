@@ -63,9 +63,22 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
+function validateFood(f: unknown): boolean {
+  if (!f || typeof f !== 'object') return false
+  const food = f as Record<string, unknown>
+  return typeof food.name === 'string'
+    && typeof food.quantity === 'string'
+    && typeof food.calories === 'number' && Number.isFinite(food.calories)
+}
+
 function validateTemplates(data: unknown): data is MealTemplate[] {
   if (!Array.isArray(data)) return false
-  return data.every(t => typeof t?.id === 'string' && typeof t?.name === 'string' && Array.isArray(t?.foods))
+  return data.every(t =>
+    typeof t?.id === 'string'
+    && typeof t?.name === 'string'
+    && Array.isArray(t?.foods)
+    && t.foods.every(validateFood)
+  )
 }
 
 type EditingState = { mode: 'food' | 'recipe'; template?: MealTemplate } | null

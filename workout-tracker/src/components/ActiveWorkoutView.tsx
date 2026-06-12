@@ -25,11 +25,10 @@ function formatDuration(startedAt: string) {
 
 export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscard, exerciseHistory }: Props) {
   const timer = useRestTimer()
-  const [elapsed, setElapsed] = useState('')
+  const [elapsed, setElapsed] = useState(() => formatDuration(active.log.started_at))
   const [expanded, setExpanded] = useState<string | null>(null)
 
   useEffect(() => {
-    setElapsed(formatDuration(active.log.started_at))
     const interval = setInterval(() => setElapsed(formatDuration(active.log.started_at)), 1000)
     return () => clearInterval(interval)
   }, [active.log.started_at])

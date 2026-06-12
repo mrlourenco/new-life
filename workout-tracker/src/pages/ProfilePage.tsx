@@ -105,7 +105,7 @@ export default function ProfilePage({
 
       {tab === 'evolucao' && (
         <NutritionEvolutionPage
-          logs={nutritionLogs} plans={nutritionPlans} today={today} onDeleteLog={onDeleteNutritionLog}
+          logs={nutritionLogs} plans={nutritionPlans} today={today} weekStartDay={weekStartDay} onDeleteLog={onDeleteNutritionLog}
         />
       )}
 

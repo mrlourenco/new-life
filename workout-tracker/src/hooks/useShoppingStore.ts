@@ -7,7 +7,7 @@ function load(): ShoppingList {
   try {
     const raw = localStorage.getItem(KEY)
     if (raw) return JSON.parse(raw) as ShoppingList
-  } catch {}
+  } catch { /* dados corrompidos — recomeça com lista vazia */ }
   return { items: [] }
 }
 
@@ -39,8 +39,11 @@ export function useShoppingStore() {
 
   const regenerate = (newAutoItems: ShoppingItem[], planId: string) => {
     const manuals = list.items.filter(i => i.manual)
+    // Keep the in-stock state of items the user already checked off
+    const inStockNames = new Set(list.items.filter(i => i.inStock).map(i => i.name.toLowerCase().trim()))
+    const merged = newAutoItems.map(i => inStockNames.has(i.name.toLowerCase().trim()) ? { ...i, inStock: true } : i)
     const updated: ShoppingList = {
-      items: [...newAutoItems, ...manuals],
+      items: [...merged, ...manuals],
       generatedAt: new Date().toISOString(),
       planId,
     }

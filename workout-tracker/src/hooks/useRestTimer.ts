@@ -41,7 +41,7 @@ export function useRestTimer() {
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5)
             osc.start(ctx.currentTime)
             osc.stop(ctx.currentTime + 0.5)
-          } catch {}
+          } catch { /* áudio indisponível — o timer termina na mesma */ }
           return 0
         }
         return s - 1

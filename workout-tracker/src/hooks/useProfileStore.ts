@@ -8,7 +8,7 @@ function load(): UserProfile {
   try {
     const raw = localStorage.getItem(KEY)
     if (raw) return JSON.parse(raw) as UserProfile
-  } catch {}
+  } catch { /* dados corrompidos — recomeça com perfil por defeito */ }
   return { macro_targets: { ...DEFAULT_MACRO_TARGETS }, weight_entries: [], week_start_day: 1 as const }
 }
 
