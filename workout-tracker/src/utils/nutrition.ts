@@ -1,4 +1,4 @@
-import type { MealTemplate, MealEntry, DayNutritionLog, DayMacros, NutritionPlan } from '../types/nutrition'
+import type { MealTemplate, MealEntry, DayNutritionLog, DayMacros, NutritionPlan, WeekAssignment } from '../types/nutrition'
 
 export function sumFoods(foods: { calories: number; protein_g?: number; carbs_g?: number; fat_g?: number; fiber_g?: number }[]): DayMacros {
   let calories = 0, protein_g = 0, carbs_g = 0, fat_g = 0, fiber_g = 0
@@ -49,13 +49,37 @@ export function getWeekDates(from: string, startDay: 0 | 1 = 1): string[] {
   })
 }
 
-export function generateShoppingItems(plan: NutritionPlan, templates: MealTemplate[], weekDates: string[]) {
+export function getDayTemplateIds(
+  date: string,
+  assignments: WeekAssignment[],
+  plans: NutritionPlan[],
+  weekStartDay: 0 | 1
+): string[] {
+  const weekStart = getWeekDates(date, weekStartDay)[0]
+  const assignment = assignments.find(a => a.week_start === weekStart)
+  if (!assignment) return []
+
+  const override = assignment.day_overrides.find(o => o.date === date)
+  if (override) return override.template_ids
+
+  if (!assignment.plan_id) return []
+  const plan = plans.find(p => p.id === assignment.plan_id)
+  if (!plan) return []
+
+  const dow = new Date(date + 'T12:00:00').getDay()
+  return plan.days.find(d => d.day_of_week === dow)?.template_ids ?? []
+}
+
+// Generate shopping items from per-date template lists; skips dates before fromDate
+export function generateShoppingItemsFromDayMap(
+  templateIdsByDate: Array<{ date: string; templateIds: string[] }>,
+  templates: MealTemplate[],
+  fromDate: string
+) {
   const foodMap = new Map<string, { count: number; quantity: string }>()
-  for (const date of weekDates) {
-    const dow = new Date(date + 'T12:00:00').getDay()
-    const planDay = plan.days.find(d => d.day_of_week === dow)
-    if (!planDay) continue
-    for (const tid of planDay.template_ids) {
+  for (const { date, templateIds } of templateIdsByDate) {
+    if (date < fromDate) continue
+    for (const tid of templateIds) {
       const t = templates.find(tt => tt.id === tid)
       if (!t) continue
       for (const food of t.foods) {
@@ -73,6 +97,15 @@ export function generateShoppingItems(plan: NutritionPlan, templates: MealTempla
     inStock: false,
     manual: false,
   }))
+}
+
+export function generateShoppingItems(plan: NutritionPlan, templates: MealTemplate[], weekDates: string[]) {
+  const items = weekDates.map(date => {
+    const dow = new Date(date + 'T12:00:00').getDay()
+    const planDay = plan.days.find(d => d.day_of_week === dow)
+    return { date, templateIds: planDay?.template_ids ?? [] }
+  })
+  return generateShoppingItemsFromDayMap(items, templates, weekDates[0])
 }
 
 export function getMonthDates(year: number, month: number): string[] {

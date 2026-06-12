@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Plus, Trash2, Utensils, Clock, Pencil } from 'lucide-react'
-import type { MealTemplate, MealEntry, DayNutritionLog, NutritionPlan } from '../../types/nutrition'
+import type { MealTemplate, MealEntry, DayNutritionLog, NutritionPlan, WeekAssignment } from '../../types/nutrition'
 import { MEAL_CATEGORIES } from '../../types/nutrition'
 import type { MacroTargets } from '../../types/profile'
 import { DEFAULT_MACRO_TARGETS } from '../../types/profile'
-import { entryMacros, dayTotals, getActivePlan, getSuggestedTemplateIds } from '../../utils/nutrition'
+import { entryMacros, dayTotals, getDayTemplateIds, getWeekDates } from '../../utils/nutrition'
 import MacroBar from '../../components/nutrition/MacroBar'
 import MealEntryLogger from '../../components/nutrition/MealEntryLogger'
 import MealEntryEditor from '../../components/nutrition/MealEntryEditor'
@@ -22,24 +22,29 @@ interface Props {
   templates: MealTemplate[]
   logs: DayNutritionLog[]
   plans: NutritionPlan[]
+  assignments: WeekAssignment[]
+  weekStartDay: 0 | 1
   macroTargets?: MacroTargets
   onSaveLog: (log: DayNutritionLog) => void
   onSaveTemplate: (t: MealTemplate) => void
 }
 
-export default function NutritionTodayPage({ today, templates, logs, plans, macroTargets, onSaveLog, onSaveTemplate }: Props) {
+export default function NutritionTodayPage({ today, templates, logs, plans, assignments, weekStartDay, macroTargets, onSaveLog, onSaveTemplate }: Props) {
   const mt = macroTargets ?? DEFAULT_MACRO_TARGETS
   const [showLogger, setShowLogger] = useState(false)
   const [editingEntry, setEditingEntry] = useState<MealEntry | null>(null)
 
-  const activePlan = getActivePlan(plans)
+  const weekStart = getWeekDates(today, weekStartDay)[0]
+  const assignment = assignments.find(a => a.week_start === weekStart)
+  const assignedPlan = plans.find(p => p.id === assignment?.plan_id)
+
   const log = logs.find(l => l.date === today)
   const entries = [...(log?.entries ?? [])].sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''))
 
   const totals = log ? dayTotals(log) : { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0 }
-  const target = activePlan?.daily_calories_target
+  const target = assignedPlan?.daily_calories_target
 
-  const suggestedIds = getSuggestedTemplateIds(activePlan, today)
+  const suggestedIds = getDayTemplateIds(today, assignments, plans, weekStartDay)
   const todayEntryTemplateIds = entries.map(e => e.template_id).filter(Boolean) as string[]
 
   const removeEntry = (id: string) => {
@@ -133,7 +138,7 @@ export default function NutritionTodayPage({ today, templates, logs, plans, macr
       {/* Header */}
       <div>
         <h2 className="text-lg font-bold text-white capitalize">{dateLabel}</h2>
-        {activePlan && <p className="text-xs text-[#737373] mt-0.5">Plano: {activePlan.name}</p>}
+        {assignedPlan && <p className="text-xs text-[#737373] mt-0.5">Plano: {assignedPlan.name}</p>}
       </div>
 
       {/* Summary */}

@@ -12,7 +12,6 @@ interface Props {
   logs: DayNutritionLog[]
   onSave: (plan: NutritionPlan) => void
   onDelete: (id: string) => void
-  onActivate: (id: string | null) => void
   onImportTemplates: (templates: MealTemplate[]) => void
 }
 
@@ -78,7 +77,7 @@ function validateImport(data: unknown): { templates?: MealTemplate[]; plan?: Omi
   return { templates: Array.isArray(d.templates) ? d.templates as MealTemplate[] : undefined, plan: d.plan as Omit<NutritionPlan, 'active'> | undefined }
 }
 
-export default function NutritionPlansPage({ plans, templates, logs, onSave, onDelete, onActivate, onImportTemplates }: Props) {
+export default function NutritionPlansPage({ plans, templates, logs, onSave, onDelete, onImportTemplates }: Props) {
   const [showBuilder, setShowBuilder] = useState(false)
   const [showPrompt, setShowPrompt] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -173,16 +172,15 @@ export default function NutritionPlansPage({ plans, templates, logs, onSave, onD
         <p className="text-center text-[#525252] text-sm py-8">Sem planos. Cria um manualmente ou importa via JSON.</p>
       ) : (
         <div className="space-y-3">
-          {[...plans].sort((a, b) => (b.active ? 1 : 0) - (a.active ? 1 : 0)).map(plan => {
+          {[...plans].map(plan => {
             const avgKcal = planDayKcal(plan)
             const isExpanded = expanded === plan.id
             return (
-              <div key={plan.id} className={`bg-[#1a1a1a] rounded-2xl overflow-hidden ${plan.active ? 'ring-1 ring-[#22c55e]' : ''}`}>
+              <div key={plan.id} className="bg-[#1a1a1a] rounded-2xl overflow-hidden">
                 <div className="px-4 py-3">
                   <div className="flex items-start gap-3">
                     <div className="flex-1 min-w-0" onClick={() => setExpanded(isExpanded ? null : plan.id)}>
                       <div className="flex items-center gap-2">
-                        {plan.active && <span className="text-[10px] bg-[#22c55e]/20 text-[#22c55e] px-2 py-0.5 rounded-full font-medium">Ativo</span>}
                         <p className="text-white font-semibold truncate">{plan.name}</p>
                       </div>
                       <p className="text-[#737373] text-xs mt-0.5">
@@ -200,12 +198,6 @@ export default function NutritionPlansPage({ plans, templates, logs, onSave, onD
                     </div>
                   </div>
 
-                  {/* Activate / deactivate */}
-                  <button
-                    onClick={() => onActivate(plan.active ? null : plan.id)}
-                    className={`mt-3 w-full py-2 rounded-xl text-xs font-semibold transition-colors ${plan.active ? 'bg-[#2e2e2e] text-[#737373]' : 'bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/30 hover:border-[#22c55e]/60'}`}>
-                    {plan.active ? 'Desativar' : 'Definir como ativo'}
-                  </button>
                 </div>
 
                 {isExpanded && (
