@@ -106,7 +106,7 @@ export default function PlansPage({ plans, onAdd, onDelete }: Props) {
 
       {/* Import */}
       <div className="mb-6 space-y-2">
-        <input ref={fileRef} type="file" accept=".json" onChange={handleFile} className="hidden" />
+        <input ref={fileRef} type="file" accept=".json,.txt" onChange={handleFile} className="hidden" />
         <button
           onClick={() => fileRef.current?.click()}
           className="w-full flex items-center justify-center gap-2 py-3 bg-[#f97316] rounded-xl text-white font-semibold hover:bg-[#ea6c0a] transition-colors"
