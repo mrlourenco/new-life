@@ -15,6 +15,7 @@ export interface WeightEntry {
 export interface UserProfile {
   macro_targets: MacroTargets
   weight_entries: WeightEntry[]
+  week_start_day: 0 | 1   // 0=Sunday, 1=Monday
 }
 
 export const DEFAULT_MACRO_TARGETS: MacroTargets = {

@@ -37,15 +37,42 @@ export function getSuggestedTemplateIds(plan: NutritionPlan | null, date: string
   return plan.days.find(d => d.day_of_week === dow)?.template_ids ?? []
 }
 
-export function getWeekDates(from: string): string[] {
+export function getWeekDates(from: string, startDay: 0 | 1 = 1): string[] {
   const d = new Date(from + 'T12:00:00')
-  const monday = new Date(d)
-  monday.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  const offset = startDay === 1 ? (d.getDay() + 6) % 7 : d.getDay()
+  const start = new Date(d)
+  start.setDate(d.getDate() - offset)
   return Array.from({ length: 7 }, (_, i) => {
-    const dd = new Date(monday)
-    dd.setDate(monday.getDate() + i)
+    const dd = new Date(start)
+    dd.setDate(start.getDate() + i)
     return dd.toISOString().slice(0, 10)
   })
+}
+
+export function generateShoppingItems(plan: NutritionPlan, templates: MealTemplate[], weekDates: string[]) {
+  const foodMap = new Map<string, { count: number; quantity: string }>()
+  for (const date of weekDates) {
+    const dow = new Date(date + 'T12:00:00').getDay()
+    const planDay = plan.days.find(d => d.day_of_week === dow)
+    if (!planDay) continue
+    for (const tid of planDay.template_ids) {
+      const t = templates.find(tt => tt.id === tid)
+      if (!t) continue
+      for (const food of t.foods) {
+        const key = food.name.toLowerCase().trim()
+        const existing = foodMap.get(key)
+        if (existing) foodMap.set(key, { count: existing.count + 1, quantity: food.quantity })
+        else foodMap.set(key, { count: 1, quantity: food.quantity })
+      }
+    }
+  }
+  return Array.from(foodMap.entries()).map(([key, { count, quantity }]) => ({
+    id: crypto.randomUUID(),
+    name: key.charAt(0).toUpperCase() + key.slice(1),
+    quantity: count > 1 ? `${quantity} × ${count}` : quantity,
+    inStock: false,
+    manual: false,
+  }))
 }
 
 export function getMonthDates(year: number, month: number): string[] {

@@ -40,18 +40,20 @@ function MacroInput({ label, field, value, color, onChange }: {
 interface Props {
   macroTargets: MacroTargets
   weightEntries: WeightEntry[]
+  weekStartDay: 0 | 1
   nutritionLogs: DayNutritionLog[]
   nutritionPlans: NutritionPlan[]
   today: string
   onSaveMacroTargets: (t: MacroTargets) => void
+  onSaveWeekStartDay: (d: 0 | 1) => void
   onAddWeightEntry: (e: WeightEntry) => void
   onDeleteWeightEntry: (id: string) => void
   onDeleteNutritionLog: (id: string) => void
 }
 
 export default function ProfilePage({
-  macroTargets, weightEntries, nutritionLogs, nutritionPlans, today,
-  onSaveMacroTargets, onAddWeightEntry, onDeleteWeightEntry, onDeleteNutritionLog,
+  macroTargets, weightEntries, weekStartDay, nutritionLogs, nutritionPlans, today,
+  onSaveMacroTargets, onSaveWeekStartDay, onAddWeightEntry, onDeleteWeightEntry, onDeleteNutritionLog,
 }: Props) {
   const [tab, setTab] = useState<ProfileTab>('perfil')
   const [targets, setTargets] = useState<MacroTargets>({ ...macroTargets })
@@ -155,6 +157,19 @@ export default function ProfilePage({
                 Guardar objetivos
               </button>
             )}
+          </div>
+
+          {/* Week start day */}
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-white">Início da semana</p>
+            <div className="grid grid-cols-2 gap-2">
+              {([1, 0] as const).map(d => (
+                <button key={d} onClick={() => onSaveWeekStartDay(d)}
+                  className={`py-2.5 rounded-xl text-sm font-medium transition-colors ${weekStartDay === d ? 'bg-[#22c55e] text-black' : 'bg-[#1a1a1a] text-[#a3a3a3] border border-[#2e2e2e]'}`}>
+                  {d === 1 ? 'Segunda-feira' : 'Domingo'}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Weight tracking */}

@@ -9,7 +9,7 @@ function load(): UserProfile {
     const raw = localStorage.getItem(KEY)
     if (raw) return JSON.parse(raw) as UserProfile
   } catch {}
-  return { macro_targets: { ...DEFAULT_MACRO_TARGETS }, weight_entries: [] }
+  return { macro_targets: { ...DEFAULT_MACRO_TARGETS }, weight_entries: [], week_start_day: 1 as const }
 }
 
 function save(p: UserProfile) {
@@ -21,6 +21,12 @@ export function useProfileStore() {
 
   const saveMacroTargets = (targets: MacroTargets) => {
     const updated = { ...profile, macro_targets: targets }
+    setProfile(updated)
+    save(updated)
+  }
+
+  const saveWeekStartDay = (day: 0 | 1) => {
+    const updated = { ...profile, week_start_day: day }
     setProfile(updated)
     save(updated)
   }
@@ -37,5 +43,5 @@ export function useProfileStore() {
     save(updated)
   }
 
-  return { profile, saveMacroTargets, addWeightEntry, deleteWeightEntry }
+  return { profile, saveMacroTargets, saveWeekStartDay, addWeightEntry, deleteWeightEntry }
 }
