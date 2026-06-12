@@ -21,7 +21,7 @@ export default function MealTemplateEditor({ template, onSave, onCancel }: Props
 
   const handleSave = () => {
     if (!name.trim()) return
-    onSave({ id: template?.id ?? crypto.randomUUID(), name: name.trim(), category, notes: notes || undefined, foods })
+    onSave({ id: template?.id ?? crypto.randomUUID(), type: 'recipe', name: name.trim(), category, notes: notes || undefined, foods })
   }
 
   const preview = templateMacros({ id: '', name: '', category, foods })
@@ -34,7 +34,7 @@ export default function MealTemplateEditor({ template, onSave, onCancel }: Props
     <div className="fixed inset-0 z-40 bg-[#0f0f0f] flex flex-col">
       <div className="flex items-center gap-3 px-4 pt-12 pb-3 border-b border-[#1a1a1a]">
         <button onClick={onCancel} className="p-1 text-[#a3a3a3]"><X size={20} /></button>
-        <h2 className="text-white font-semibold flex-1">{template ? 'Editar refeição' : 'Nova refeição'}</h2>
+        <h2 className="text-white font-semibold flex-1">{template ? 'Editar receita' : 'Nova receita'}</h2>
         <button onClick={handleSave} disabled={!name.trim()} className="px-4 py-1.5 bg-[#22c55e] rounded-lg text-white text-sm font-semibold disabled:opacity-40">
           Guardar
         </button>

@@ -31,6 +31,7 @@ export const MEAL_CATEGORIES: { id: MealCategory; label: string; defaultTime: st
 export interface MealTemplate {
   id: string
   name: string
+  type?: 'food' | 'recipe'   // 'food' = single item, 'recipe' = composed meal; defaults to 'recipe'
   category: MealCategory
   notes?: string
   foods: FoodItem[]
