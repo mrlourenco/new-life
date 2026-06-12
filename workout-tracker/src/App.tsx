@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import { usePlans, useLogs, useActiveWorkout, useExerciseHistory } from './hooks/useStore'
+import { useMealPlans, useNutritionLogs } from './hooks/useNutritionStore'
 import BottomNav, { type Tab } from './components/BottomNav'
 import ActiveWorkoutView from './components/ActiveWorkoutView'
 import TodayPage from './pages/TodayPage'
 import HistoryPage from './pages/HistoryPage'
 import PlansPage from './pages/PlansPage'
+import NutritionPage from './pages/NutritionPage'
 import type { WorkoutPlan, WorkoutSession, ActiveWorkout } from './types/workout'
+
+const TODAY = new Date().toISOString().slice(0, 10)
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('today')
@@ -15,6 +19,9 @@ export default function App() {
   const { logs, addLog, deleteLog } = useLogs()
   const { active, startWorkout, updateActive, clearActive } = useActiveWorkout()
   const exerciseHistory = useExerciseHistory(logs)
+
+  const { plans: mealPlans, addPlan: addMealPlan, deletePlan: deleteMealPlan } = useMealPlans()
+  const { logs: nutritionLogs, saveLog: saveNutritionLog, deleteLog: deleteNutritionLog } = useNutritionLogs()
 
   const handleStart = (plan: WorkoutPlan, session: WorkoutSession) => {
     const now = new Date().toISOString()
@@ -89,6 +96,17 @@ export default function App() {
         )}
         {tab === 'plans' && (
           <PlansPage plans={plans} onAdd={addPlan} onDelete={deletePlan} />
+        )}
+        {tab === 'nutrition' && (
+          <NutritionPage
+            plans={mealPlans}
+            logs={nutritionLogs}
+            today={TODAY}
+            onSaveLog={saveNutritionLog}
+            onDeleteLog={deleteNutritionLog}
+            onAddPlan={addMealPlan}
+            onDeletePlan={deleteMealPlan}
+          />
         )}
       </main>
       <BottomNav tab={tab} onChange={setTab} hasActive={!!active} />
