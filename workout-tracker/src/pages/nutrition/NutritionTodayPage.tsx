@@ -2,21 +2,33 @@ import { useState } from 'react'
 import { Plus, Trash2, Utensils, Clock, Pencil } from 'lucide-react'
 import type { MealTemplate, MealEntry, DayNutritionLog, NutritionPlan } from '../../types/nutrition'
 import { MEAL_CATEGORIES } from '../../types/nutrition'
+import type { MacroTargets } from '../../types/profile'
+import { DEFAULT_MACRO_TARGETS } from '../../types/profile'
 import { entryMacros, dayTotals, getActivePlan, getSuggestedTemplateIds } from '../../utils/nutrition'
 import MacroBar from '../../components/nutrition/MacroBar'
 import MealEntryLogger from '../../components/nutrition/MealEntryLogger'
 import MealEntryEditor from '../../components/nutrition/MealEntryEditor'
+
+function macroColor(value: number, target: number, baseColor: string): string {
+  if (target <= 0) return baseColor
+  const ratio = value / target
+  if (ratio > 1.2) return 'text-red-500'
+  if (ratio > 1.1) return 'text-yellow-400'
+  return baseColor
+}
 
 interface Props {
   today: string
   templates: MealTemplate[]
   logs: DayNutritionLog[]
   plans: NutritionPlan[]
+  macroTargets?: MacroTargets
   onSaveLog: (log: DayNutritionLog) => void
   onSaveTemplate: (t: MealTemplate) => void
 }
 
-export default function NutritionTodayPage({ today, templates, logs, plans, onSaveLog, onSaveTemplate }: Props) {
+export default function NutritionTodayPage({ today, templates, logs, plans, macroTargets, onSaveLog, onSaveTemplate }: Props) {
+  const mt = macroTargets ?? DEFAULT_MACRO_TARGETS
   const [showLogger, setShowLogger] = useState(false)
   const [editingEntry, setEditingEntry] = useState<MealEntry | null>(null)
 
@@ -137,16 +149,21 @@ export default function NutritionTodayPage({ today, templates, logs, plans, onSa
           <MacroBar macros={totals} target={target} />
           <div className="grid grid-cols-4 gap-2 mt-3">
             {[
-              { label: 'Proteína', val: Math.round(totals.protein_g), color: 'text-[#60a5fa]' },
-              { label: 'Carboidratos', val: Math.round(totals.carbs_g), color: 'text-[#f97316]' },
-              { label: 'Gordura', val: Math.round(totals.fat_g), color: 'text-[#a78bfa]' },
-              { label: 'Fibra', val: Math.round(totals.fiber_g), color: 'text-[#14b8a6]' },
-            ].map(({ label, val, color }) => (
-              <div key={label} className="bg-[#0f0f0f] rounded-xl p-2 text-center">
-                <p className={`text-sm font-bold ${color}`}>{val}g</p>
-                <p className="text-[9px] text-[#525252] leading-tight mt-0.5">{label}</p>
-              </div>
-            ))}
+              { label: 'Proteína', val: Math.round(totals.protein_g), base: 'text-[#60a5fa]', targetVal: mt.protein_g },
+              { label: 'Carboidratos', val: Math.round(totals.carbs_g), base: 'text-[#f97316]', targetVal: mt.carbs_g },
+              { label: 'Gordura', val: Math.round(totals.fat_g), base: 'text-[#a78bfa]', targetVal: mt.fat_g },
+              { label: 'Fibra', val: Math.round(totals.fiber_g), base: 'text-[#14b8a6]', targetVal: mt.fiber_g },
+            ].map(({ label, val, base, targetVal }) => {
+              const color = macroColor(val, targetVal, base)
+              const overTarget = targetVal > 0
+              return (
+                <div key={label} className="bg-[#0f0f0f] rounded-xl p-2 text-center">
+                  <p className={`text-sm font-bold ${color}`}>{val}g</p>
+                  {overTarget && <p className="text-[9px] text-[#3f3f3f] leading-tight">/{targetVal}g</p>}
+                  <p className="text-[9px] text-[#525252] leading-tight mt-0.5">{label}</p>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

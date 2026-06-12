@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { usePlans, useLogs, useActiveWorkout, useExerciseHistory } from './hooks/useStore'
 import { useMealTemplates, useNutritionLogs, useNutritionPlans } from './hooks/useNutritionStore'
+import { useProfileStore } from './hooks/useProfileStore'
 import BottomNav, { type Tab } from './components/BottomNav'
 import ActiveWorkoutView from './components/ActiveWorkoutView'
 import TodayPage from './pages/TodayPage'
@@ -25,6 +26,7 @@ export default function App() {
   const { templates, saveTemplate, deleteTemplate, importTemplates } = useMealTemplates()
   const { logs: nutritionLogs, saveLog: saveNutritionLog, deleteLog: deleteNutritionLog } = useNutritionLogs()
   const { plans: nutritionPlans, savePlan, deletePlan: deletePlanN, setActivePlan } = useNutritionPlans()
+  const { profile, saveMacroTargets, addWeightEntry, deleteWeightEntry } = useProfileStore()
 
   const handleStart = (plan: WorkoutPlan, session: WorkoutSession) => {
     const now = new Date().toISOString()
@@ -101,6 +103,8 @@ export default function App() {
             templates={templates}
             logs={nutritionLogs}
             plans={nutritionPlans}
+            macroTargets={profile.macro_targets}
+            weightEntries={profile.weight_entries}
             onSaveLog={saveNutritionLog}
             onDeleteLog={deleteNutritionLog}
             onSaveTemplate={saveTemplate}
@@ -109,6 +113,9 @@ export default function App() {
             onSavePlan={savePlan}
             onDeletePlan={deletePlanN}
             onActivatePlan={setActivePlan}
+            onSaveMacroTargets={saveMacroTargets}
+            onAddWeightEntry={addWeightEntry}
+            onDeleteWeightEntry={deleteWeightEntry}
           />
         )}
       </main>
