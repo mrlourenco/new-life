@@ -1,5 +1,25 @@
-import { useState, useEffect, useCallback } from 'react'
-import type { WorkoutPlan, WorkoutLog, ActiveWorkout } from '../types/workout'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import type { WorkoutPlan, WorkoutLog, ActiveWorkout, SetLog } from '../types/workout'
+
+export interface ExerciseHistory {
+  date: string
+  sets: SetLog[]
+}
+
+export function useExerciseHistory(logs: WorkoutLog[]) {
+  return useMemo(() => {
+    const map = new Map<string, ExerciseHistory>()
+    for (const log of logs) {
+      for (const ex of log.exercises) {
+        const key = ex.exercise_name.toLowerCase().trim()
+        if (!map.has(key)) {
+          map.set(key, { date: log.date, sets: ex.sets.filter(s => s.completed) })
+        }
+      }
+    }
+    return map
+  }, [logs])
+}
 
 const KEYS = {
   plans: 'wt_plans',
