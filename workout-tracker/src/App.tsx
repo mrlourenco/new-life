@@ -20,7 +20,7 @@ export default function App() {
   const { active, startWorkout, updateActive, clearActive } = useActiveWorkout()
   const exerciseHistory = useExerciseHistory(logs)
 
-  const { plans: mealPlans, addPlan: addMealPlan, deletePlan: deleteMealPlan } = useMealPlans()
+  const { plans: mealPlans, addPlan: addMealPlan, deletePlan: deleteMealPlan, updatePlan: updateMealPlan } = useMealPlans()
   const { logs: nutritionLogs, saveLog: saveNutritionLog, deleteLog: deleteNutritionLog } = useNutritionLogs()
 
   const handleStart = (plan: WorkoutPlan, session: WorkoutSession) => {
@@ -106,6 +106,7 @@ export default function App() {
             onDeleteLog={deleteNutritionLog}
             onAddPlan={addMealPlan}
             onDeletePlan={deleteMealPlan}
+            onUpdatePlan={updateMealPlan}
           />
         )}
       </main>

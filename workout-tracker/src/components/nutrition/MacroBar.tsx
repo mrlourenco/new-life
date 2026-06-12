@@ -22,7 +22,7 @@ export default function MacroBar({ macros, target, compact = false }: Props) {
             <span className="text-[#60a5fa]">P: {Math.round(macros.protein_g)}g</span>
             <span className="text-[#f97316]">C: {Math.round(macros.carbs_g)}g</span>
             <span className="text-[#a78bfa]">G: {Math.round(macros.fat_g)}g</span>
-            {macros.fiber_g > 0 && <span className="text-[#4ade80]">F: {Math.round(macros.fiber_g)}g</span>}
+            {macros.fiber_g > 0 && <span className="text-[#14b8a6]">F: {Math.round(macros.fiber_g)}g</span>}
           </div>
           <div className="text-right">
             <span className="text-white font-bold">{Math.round(macros.calories)}</span>
