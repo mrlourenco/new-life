@@ -1,4 +1,5 @@
-import { Trash2, Clock, Trophy, TrendingUp } from 'lucide-react'
+import { useState } from 'react'
+import { Trash2, Clock, Trophy, TrendingUp, ChevronRight, X, Check, Minus } from 'lucide-react'
 import type { WorkoutLog } from '../types/workout'
 
 interface Props {
@@ -26,7 +27,126 @@ function totalVolume(log: WorkoutLog) {
   return vol
 }
 
+function WorkoutDetail({ log, onClose, onDelete }: { log: WorkoutLog; onClose: () => void; onDelete: () => void }) {
+  const vol = totalVolume(log)
+  const completedSets = log.exercises.flatMap(e => e.sets).filter(s => s.completed).length
+  const totalSets = log.exercises.flatMap(e => e.sets).length
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#0f0f0f] flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-12 pb-3 border-b border-[#1a1a1a]">
+        <button onClick={onClose} className="p-2 -ml-2 text-[#737373]">
+          <X size={20} />
+        </button>
+        <div className="text-center">
+          <p className="font-semibold text-sm text-white truncate max-w-[180px]">{log.session_name}</p>
+          <p className="text-xs text-[#737373]">
+            {new Date(log.date).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
+        <button onClick={onDelete} className="p-2 -mr-2 text-[#525252] hover:text-red-400 transition-colors">
+          <Trash2 size={18} />
+        </button>
+      </div>
+
+      {/* Summary stats */}
+      <div className="flex gap-3 px-4 py-3 border-b border-[#1a1a1a]">
+        <div className="flex items-center gap-1.5 text-xs text-[#737373]">
+          <Clock size={13} className="text-[#f97316]" />
+          {formatDuration(log.duration_seconds)}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-[#737373]">
+          <Trophy size={13} className="text-[#f97316]" />
+          {completedSets}/{totalSets} séries
+        </div>
+        {vol > 0 && (
+          <div className="flex items-center gap-1.5 text-xs text-[#737373]">
+            <TrendingUp size={13} className="text-[#f97316]" />
+            {Math.round(vol)} kg volume
+          </div>
+        )}
+      </div>
+
+      {/* Exercise detail list */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {log.exercises.map(ex => {
+          const completedCount = ex.sets.filter(s => s.completed).length
+          const exVol = ex.sets.reduce((acc, s) => {
+            if (s.completed && s.weight_kg && s.reps_done) return acc + s.weight_kg * s.reps_done
+            return acc
+          }, 0)
+
+          return (
+            <div key={ex.exercise_id} className="bg-[#1a1a1a] rounded-2xl overflow-hidden">
+              {/* Exercise header */}
+              <div className="px-4 py-3 border-b border-[#2e2e2e]">
+                <div className="flex items-center justify-between">
+                  <p className="text-white font-semibold">{ex.exercise_name}</p>
+                  <span className={`text-xs font-medium ${completedCount === ex.sets.length ? 'text-[#4ade80]' : 'text-[#737373]'}`}>
+                    {completedCount}/{ex.sets.length} séries
+                  </span>
+                </div>
+                <p className="text-[#525252] text-xs mt-0.5 capitalize">{ex.muscle}</p>
+                {ex.notes && (
+                  <p className="text-[#737373] text-xs mt-1.5 italic">"{ex.notes}"</p>
+                )}
+                {exVol > 0 && (
+                  <p className="text-[#737373] text-xs mt-1">Volume: {Math.round(exVol)} kg</p>
+                )}
+              </div>
+
+              {/* Sets table */}
+              <div>
+                <div className="grid grid-cols-[32px_1fr_1fr_1fr_32px] gap-2 px-4 py-2 border-b border-[#2e2e2e]">
+                  <span className="text-[10px] text-[#525252] font-semibold">#</span>
+                  <span className="text-[10px] text-[#525252] font-semibold">Alvo</span>
+                  <span className="text-[10px] text-[#525252] font-semibold">Peso</span>
+                  <span className="text-[10px] text-[#525252] font-semibold">Reps</span>
+                  <span />
+                </div>
+                {ex.sets.map(s => (
+                  <div
+                    key={s.set_number}
+                    className={`grid grid-cols-[32px_1fr_1fr_1fr_32px] gap-2 items-center px-4 py-2.5 border-b border-[#2e2e2e] last:border-0 ${s.completed ? 'bg-[#0f2318]' : 'opacity-50'}`}
+                  >
+                    <span className="text-xs text-[#737373] font-semibold">{s.set_number}</span>
+                    <span className="text-xs text-[#737373]">{s.reps_target}</span>
+                    <span className="text-sm font-semibold text-white">
+                      {s.weight_kg != null ? `${s.weight_kg} kg` : <Minus size={12} className="text-[#525252]" />}
+                    </span>
+                    <span className="text-sm font-semibold text-white">
+                      {s.reps_done != null ? s.reps_done : <Minus size={12} className="text-[#525252]" />}
+                    </span>
+                    <span>
+                      {s.completed
+                        ? <Check size={14} className="text-[#4ade80]" />
+                        : <Minus size={14} className="text-[#525252]" />}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function HistoryPage({ logs, onDelete }: Props) {
+  const [detail, setDetail] = useState<WorkoutLog | null>(null)
+
+  if (detail) {
+    return (
+      <WorkoutDetail
+        log={detail}
+        onClose={() => setDetail(null)}
+        onDelete={() => { onDelete(detail.id); setDetail(null) }}
+      />
+    )
+  }
+
   if (logs.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center px-4 text-center">
@@ -63,7 +183,11 @@ export default function HistoryPage({ logs, onDelete }: Props) {
           const totalSets = log.exercises.flatMap(e => e.sets).length
 
           return (
-            <div key={log.id} className="bg-[#1a1a1a] rounded-2xl p-4">
+            <button
+              key={log.id}
+              onClick={() => setDetail(log)}
+              className="w-full text-left bg-[#1a1a1a] rounded-2xl p-4 hover:bg-[#222] transition-colors"
+            >
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-white font-semibold">{log.session_name}</p>
@@ -71,12 +195,7 @@ export default function HistoryPage({ logs, onDelete }: Props) {
                     {new Date(log.date).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'short' })}
                   </p>
                 </div>
-                <button
-                  onClick={() => onDelete(log.id)}
-                  className="p-2 text-[#525252] hover:text-red-400 transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
+                <ChevronRight size={18} className="text-[#525252] mt-0.5" />
               </div>
 
               <div className="flex gap-4 mt-3">
@@ -96,7 +215,6 @@ export default function HistoryPage({ logs, onDelete }: Props) {
                 )}
               </div>
 
-              {/* Exercise breakdown */}
               <div className="mt-3 space-y-1">
                 {log.exercises.map(ex => {
                   const done = ex.sets.filter(s => s.completed).length
@@ -110,7 +228,7 @@ export default function HistoryPage({ logs, onDelete }: Props) {
                   )
                 })}
               </div>
-            </div>
+            </button>
           )
         })}
       </div>

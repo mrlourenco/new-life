@@ -30,6 +30,7 @@ export default function App() {
           exercise_id: ex.id,
           exercise_name: ex.name,
           muscle: ex.muscle,
+          notes: ex.notes,
           sets: Array.from({ length: ex.sets }, (_, i) => ({
             set_number: i + 1,
             reps_target: ex.reps,
