@@ -1,6 +1,6 @@
-import { Dumbbell, History, ClipboardList, Utensils, UserCircle } from 'lucide-react'
+import { Dumbbell, Utensils, UserCircle } from 'lucide-react'
 
-export type Tab = 'today' | 'history' | 'plans' | 'nutrition' | 'profile'
+export type Tab = 'workout' | 'nutrition' | 'profile'
 
 interface Props {
   tab: Tab
@@ -9,9 +9,7 @@ interface Props {
 }
 
 const TABS = [
-  { id: 'today' as Tab, label: 'Hoje', Icon: Dumbbell },
-  { id: 'history' as Tab, label: 'Histórico', Icon: History },
-  { id: 'plans' as Tab, label: 'Planos', Icon: ClipboardList },
+  { id: 'workout' as Tab, label: 'Treino', Icon: Dumbbell },
   { id: 'nutrition' as Tab, label: 'Nutrição', Icon: Utensils },
   { id: 'profile' as Tab, label: 'Perfil', Icon: UserCircle },
 ]
@@ -27,13 +25,10 @@ export default function BottomNav({ tab, onChange, hasActive }: Props) {
             onClick={() => onChange(id)}
             className="flex-1 flex flex-col items-center gap-1 py-3 relative"
           >
-            {id === 'today' && hasActive && (
+            {id === 'workout' && hasActive && (
               <span className="absolute top-2 right-[calc(50%-12px)] w-2 h-2 bg-[#f97316] rounded-full" />
             )}
-            <Icon
-              size={22}
-              className={active ? 'text-[#f97316]' : 'text-[#525252]'}
-            />
+            <Icon size={22} className={active ? 'text-[#f97316]' : 'text-[#525252]'} />
             <span className={`text-[10px] font-medium ${active ? 'text-[#f97316]' : 'text-[#525252]'}`}>
               {label}
             </span>
