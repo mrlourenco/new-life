@@ -26,7 +26,7 @@ export default function App() {
   const { templates, saveTemplate, deleteTemplate, importTemplates } = useMealTemplates()
   const { logs: nutritionLogs, saveLog: saveNutritionLog, deleteLog: deleteNutritionLog } = useNutritionLogs()
   const { plans: nutritionPlans, savePlan, deletePlan: deletePlanN, setActivePlan } = useNutritionPlans()
-  const { profile, saveMacroTargets, addWeightEntry, deleteWeightEntry } = useProfileStore()
+  const { profile, saveMacroTargets, saveWeekStartDay, addWeightEntry, deleteWeightEntry } = useProfileStore()
 
   const handleStart = (plan: WorkoutPlan, session: WorkoutSession) => {
     const now = new Date().toISOString()
@@ -110,6 +110,7 @@ export default function App() {
             logs={nutritionLogs}
             plans={nutritionPlans}
             macroTargets={profile.macro_targets}
+            weekStartDay={profile.week_start_day}
             onSaveLog={saveNutritionLog}
             onSaveTemplate={saveTemplate}
             onDeleteTemplate={deleteTemplate}
@@ -123,10 +124,12 @@ export default function App() {
           <ProfilePage
             macroTargets={profile.macro_targets}
             weightEntries={profile.weight_entries}
+            weekStartDay={profile.week_start_day}
             nutritionLogs={nutritionLogs}
             nutritionPlans={nutritionPlans}
             today={TODAY}
             onSaveMacroTargets={saveMacroTargets}
+            onSaveWeekStartDay={saveWeekStartDay}
             onAddWeightEntry={addWeightEntry}
             onDeleteWeightEntry={deleteWeightEntry}
             onDeleteNutritionLog={deleteNutritionLog}
