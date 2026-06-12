@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { usePlans, useLogs, useActiveWorkout, useExerciseHistory } from './hooks/useStore'
-import { useMealPlans, useNutritionLogs } from './hooks/useNutritionStore'
+import { useMealTemplates, useNutritionLogs, useNutritionPlans } from './hooks/useNutritionStore'
 import BottomNav, { type Tab } from './components/BottomNav'
 import ActiveWorkoutView from './components/ActiveWorkoutView'
 import TodayPage from './pages/TodayPage'
@@ -15,13 +15,16 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('today')
   const [showActive, setShowActive] = useState(false)
 
+  // Workout
   const { plans, addPlan, deletePlan } = usePlans()
   const { logs, addLog, deleteLog } = useLogs()
   const { active, startWorkout, updateActive, clearActive } = useActiveWorkout()
   const exerciseHistory = useExerciseHistory(logs)
 
-  const { plans: mealPlans, addPlan: addMealPlan, deletePlan: deleteMealPlan, updatePlan: updateMealPlan } = useMealPlans()
+  // Nutrition
+  const { templates, saveTemplate, deleteTemplate, importTemplates } = useMealTemplates()
   const { logs: nutritionLogs, saveLog: saveNutritionLog, deleteLog: deleteNutritionLog } = useNutritionLogs()
+  const { plans: nutritionPlans, savePlan, deletePlan: deletePlanN, setActivePlan } = useNutritionPlans()
 
   const handleStart = (plan: WorkoutPlan, session: WorkoutSession) => {
     const now = new Date().toISOString()
@@ -84,12 +87,7 @@ export default function App() {
     <div className="h-full flex flex-col max-w-md mx-auto">
       <main className="flex-1 flex flex-col overflow-hidden">
         {tab === 'today' && (
-          <TodayPage
-            plans={plans}
-            active={active}
-            onStart={handleStart}
-            onResume={() => setShowActive(true)}
-          />
+          <TodayPage plans={plans} active={active} onStart={handleStart} onResume={() => setShowActive(true)} />
         )}
         {tab === 'history' && (
           <HistoryPage logs={logs} onDelete={deleteLog} />
@@ -99,14 +97,18 @@ export default function App() {
         )}
         {tab === 'nutrition' && (
           <NutritionPage
-            plans={mealPlans}
-            logs={nutritionLogs}
             today={TODAY}
+            templates={templates}
+            logs={nutritionLogs}
+            plans={nutritionPlans}
             onSaveLog={saveNutritionLog}
             onDeleteLog={deleteNutritionLog}
-            onAddPlan={addMealPlan}
-            onDeletePlan={deleteMealPlan}
-            onUpdatePlan={updateMealPlan}
+            onSaveTemplate={saveTemplate}
+            onDeleteTemplate={deleteTemplate}
+            onImportTemplates={importTemplates}
+            onSavePlan={savePlan}
+            onDeletePlan={deletePlanN}
+            onActivatePlan={setActivePlan}
           />
         )}
       </main>
