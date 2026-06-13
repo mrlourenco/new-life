@@ -1,3 +1,5 @@
+import type { Timestamped } from './common'
+
 export interface MacroTargets {
   protein_g: number
   carbs_g: number
@@ -12,7 +14,7 @@ export interface WeightEntry {
   note?: string
 }
 
-export interface UserProfile {
+export interface UserProfile extends Timestamped {
   macro_targets: MacroTargets
   weight_entries: WeightEntry[]
   week_start_day: 0 | 1   // 0=Sunday, 1=Monday

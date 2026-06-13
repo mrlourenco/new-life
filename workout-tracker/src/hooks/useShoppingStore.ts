@@ -1,18 +1,9 @@
 import { useState } from 'react'
 import type { ShoppingList, ShoppingItem } from '../types/shopping'
-
-const KEY = 'nl_shopping_v1'
+import { STORAGE_KEYS, loadJSON, saveJSON } from '../utils/storage'
 
 function load(): ShoppingList {
-  try {
-    const raw = localStorage.getItem(KEY)
-    if (raw) return JSON.parse(raw) as ShoppingList
-  } catch { /* dados corrompidos — recomeça com lista vazia */ }
-  return { items: [] }
-}
-
-function persist(list: ShoppingList) {
-  localStorage.setItem(KEY, JSON.stringify(list))
+  return loadJSON<ShoppingList>(STORAGE_KEYS.shoppingList) ?? { items: [] }
 }
 
 export function useShoppingStore() {
@@ -21,7 +12,7 @@ export function useShoppingStore() {
   const setItems = (items: ShoppingItem[]) => {
     const updated = { ...list, items }
     setList(updated)
-    persist(updated)
+    saveJSON(STORAGE_KEYS.shoppingList, updated)
   }
 
   const toggleItem = (id: string) => {
@@ -48,7 +39,7 @@ export function useShoppingStore() {
       planId,
     }
     setList(updated)
-    persist(updated)
+    saveJSON(STORAGE_KEYS.shoppingList, updated)
   }
 
   return { list, toggleItem, addManualItem, deleteItem, regenerate }

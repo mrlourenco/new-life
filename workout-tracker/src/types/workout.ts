@@ -1,3 +1,5 @@
+import type { Timestamped } from './common'
+
 export interface Exercise {
   id: string
   name: string
@@ -18,7 +20,7 @@ export interface WorkoutSession {
   exercises: Exercise[]
 }
 
-export interface WorkoutPlan {
+export interface WorkoutPlan extends Timestamped {
   id: string
   name: string
   goal: 'strength' | 'hypertrophy' | 'endurance' | 'general'
@@ -44,7 +46,7 @@ export interface ExerciseLog {
   sets: SetLog[]
 }
 
-export interface WorkoutLog {
+export interface WorkoutLog extends Timestamped {
   id: string
   session_id: string
   plan_id: string

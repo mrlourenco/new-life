@@ -2,7 +2,7 @@
 
 App pessoal de treino e nutrição, mobile-first, instalável como PWA.
 
-O código está em [`workout-tracker/`](workout-tracker/) — ver o README respetivo para detalhes de desenvolvimento.
+O código está em [`workout-tracker/`](workout-tracker/) — ver o README respetivo para detalhes de desenvolvimento. O plano de evolução (backend, modelo treinador→clientes) está no [ROADMAP](ROADMAP.md).
 
 ## Deploy
 
