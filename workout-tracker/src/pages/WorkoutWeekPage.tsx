@@ -4,6 +4,7 @@ import type { WorkoutPlan, WorkoutSession, WorkoutLog, WorkoutWeekAssignment } f
 import { getWeekDates } from '../utils/dates'
 import { getDaySessionIds, findSession } from '../utils/workout'
 import { muscleLabel } from '../utils/labels'
+import SessionDetail from '../components/workout/SessionDetail'
 
 interface Props {
   today: string
@@ -135,6 +136,7 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
   const [weekOffset, setWeekOffset] = useState(0)
   const [showPlanPicker, setShowPlanPicker] = useState(false)
   const [editingDate, setEditingDate] = useState<string | null>(null)
+  const [viewing, setViewing] = useState<{ plan: WorkoutPlan; session: WorkoutSession } | null>(null)
 
   const anchorDate = new Date(today + 'T12:00:00')
   anchorDate.setDate(anchorDate.getDate() + weekOffset * 7)
@@ -164,6 +166,16 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
     if (!editingDate) return
     onSaveDayOverride(weekStart, editingDate, [])
     setEditingDate(null)
+  }
+
+  if (viewing) {
+    return (
+      <SessionDetail
+        plan={viewing.plan}
+        session={viewing.session}
+        onClose={() => setViewing(null)}
+      />
+    )
   }
 
   if (editingDate) {
@@ -220,8 +232,8 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
           const isToday = date === today
           const sessionIds = getDaySessionIds(date, assignments, plans, weekStartDay)
           const daySessions = sessionIds
-            .map(id => findSession(plans, id)?.session)
-            .filter(Boolean) as WorkoutSession[]
+            .map(id => findSession(plans, id))
+            .filter(Boolean) as { plan: WorkoutPlan; session: WorkoutSession }[]
           const doneSessionIds = new Set(logs.filter(l => l.date === date).map(l => l.session_id))
           const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short' })
           const hasOverride = assignment?.day_overrides.some(o => o.date === date) ?? false
@@ -244,15 +256,16 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
 
               {daySessions.length > 0 ? (
                 <div className="bg-[#131313] px-3 pb-2 pt-1 space-y-0.5">
-                  {daySessions.map(s => {
+                  {daySessions.map(({ plan: sessionPlan, session: s }) => {
                     const done = doneSessionIds.has(s.id)
                     return (
-                      <div key={s.id} className="flex items-center gap-2 py-1.5">
+                      <button key={s.id} onClick={() => setViewing({ plan: sessionPlan, session: s })}
+                        className="w-full flex items-center gap-2 py-1.5 text-left">
                         <Dumbbell size={11} className="text-[#f97316] flex-shrink-0" />
                         <p className="text-xs text-[#a3a3a3] flex-1 truncate">{s.name}</p>
                         <span className="text-[10px] text-[#525252] flex-shrink-0">{s.exercises.length} ex.</span>
                         {done && <CheckCircle2 size={12} className="text-[#22c55e] flex-shrink-0" />}
-                      </div>
+                      </button>
                     )
                   })}
                 </div>

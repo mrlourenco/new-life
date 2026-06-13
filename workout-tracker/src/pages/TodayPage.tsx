@@ -5,6 +5,7 @@ import { muscleLabel } from '../utils/labels'
 import { formatDurationSeconds } from '../utils/format'
 import { getDaySessionIds, findSession } from '../utils/workout'
 import WorkoutLogEditor from '../components/workout/WorkoutLogEditor'
+import SessionDetail from '../components/workout/SessionDetail'
 
 interface Props {
   today: string
@@ -38,6 +39,7 @@ function muscleClass(m: string) {
 
 export default function TodayPage({ today, plans, active, logs, assignments, weekStartDay, onStart, onResume, onUpdateLog, onDeleteLog }: Props) {
   const [editingLog, setEditingLog] = useState<WorkoutLog | null>(null)
+  const [viewing, setViewing] = useState<{ plan: WorkoutPlan; session: WorkoutSession } | null>(null)
 
   const dateLabel = new Date(today + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
 
@@ -53,6 +55,17 @@ export default function TodayPage({ today, plans, active, logs, assignments, wee
         onSave={log => { onUpdateLog(log); setEditingLog(null) }}
         onDelete={id => { onDeleteLog(id); setEditingLog(null) }}
         onCancel={() => setEditingLog(null)}
+      />
+    )
+  }
+
+  if (viewing) {
+    return (
+      <SessionDetail
+        plan={viewing.plan}
+        session={viewing.session}
+        onStart={(p, s) => { setViewing(null); onStart(p, s) }}
+        onClose={() => setViewing(null)}
       />
     )
   }
@@ -127,7 +140,7 @@ export default function TodayPage({ today, plans, active, logs, assignments, wee
           <p className="text-xs text-[#737373] uppercase tracking-wider font-semibold mb-3">Agendado para hoje</p>
           <div className="space-y-3">
             {scheduled.map(({ plan, session }) => (
-              <SessionCard key={session.id} plan={plan} session={session} onStart={onStart} />
+              <SessionCard key={session.id} plan={plan} session={session} onStart={onStart} onView={setViewing} />
             ))}
           </div>
         </div>
@@ -148,7 +161,7 @@ export default function TodayPage({ today, plans, active, logs, assignments, wee
           <div className="space-y-2">
             {plans.flatMap(plan =>
               plan.sessions.map(session => (
-                <SessionCard key={session.id} plan={plan} session={session} onStart={onStart} compact />
+                <SessionCard key={session.id} plan={plan} session={session} onStart={onStart} onView={setViewing} compact />
               ))
             )}
           </div>
@@ -158,16 +171,17 @@ export default function TodayPage({ today, plans, active, logs, assignments, wee
   )
 }
 
-function SessionCard({ plan, session, onStart, compact = false }: {
+function SessionCard({ plan, session, onStart, onView, compact = false }: {
   plan: WorkoutPlan
   session: WorkoutSession
   onStart: (p: WorkoutPlan, s: WorkoutSession) => void
+  onView: (v: { plan: WorkoutPlan; session: WorkoutSession }) => void
   compact?: boolean
 }) {
   return (
     <div className={`bg-[#1a1a1a] rounded-2xl p-4 ${compact ? '' : 'border border-[#2e2e2e]'}`}>
       <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
+        <button onClick={() => onView({ plan, session })} className="flex-1 min-w-0 text-left">
           <p className="text-white font-semibold truncate">{session.name}</p>
           <p className="text-[#737373] text-xs mt-0.5">{plan.name}</p>
           {!compact && (
@@ -177,10 +191,10 @@ function SessionCard({ plan, session, onStart, compact = false }: {
                   <span key={m} className={`text-[10px] px-2 py-0.5 rounded-full ${muscleClass(m)}`}>{muscleLabel(m)}</span>
                 ))}
               </div>
-              <p className="text-[#525252] text-xs mt-2">{session.exercises.length} exercícios</p>
+              <p className="text-[#525252] text-xs mt-2">{session.exercises.length} exercícios · toca para ver</p>
             </>
           )}
-        </div>
+        </button>
         <button onClick={() => onStart(plan, session)}
           className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-[#f97316] rounded-xl text-white text-xs font-semibold hover:bg-[#ea6c0a] transition-colors">
           <Play size={14} fill="currentColor" />
