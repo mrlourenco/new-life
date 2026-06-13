@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Check, X, Trophy, Clock, ChevronDown, ChevronUp } from 'lucide-react'
-import type { ActiveWorkout, SetLog } from '../types/workout'
+import { ChevronLeft, ChevronRight, Check, X, Trophy, Clock, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
+import type { ActiveWorkout, SetLog, Exercise } from '../types/workout'
 import { useRestTimer } from '../hooks/useRestTimer'
 import RestTimerOverlay from './RestTimerOverlay'
 import { muscleLabel, equipmentLabel } from '../utils/labels'
@@ -8,6 +8,7 @@ import { formatElapsedSince } from '../utils/format'
 import type { ExerciseHistory } from '../hooks/useStore'
 import ExerciseNav from './workout/ExerciseNav'
 import ExerciseHistoryCard from './workout/ExerciseHistoryCard'
+import ExerciseEditor from './workout/ExerciseEditor'
 import SetRow from './workout/SetRow'
 
 interface Props {
@@ -18,10 +19,16 @@ interface Props {
   exerciseHistory: Map<string, ExerciseHistory>
 }
 
+function newExerciseDraft(): Exercise {
+  return { id: crypto.randomUUID(), name: '', sets: 3, reps: '10-12', rest_seconds: 90, muscle: 'chest', equipment: 'barbell' }
+}
+
 export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscard, exerciseHistory }: Props) {
   const timer = useRestTimer()
   const [elapsed, setElapsed] = useState(() => formatElapsedSince(active.log.started_at))
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [lastCompleted, setLastCompleted] = useState<{ exIdx: number; setIdx: number } | null>(null)
+  const [adding, setAdding] = useState<Exercise | null>(null)
 
   useEffect(() => {
     const interval = setInterval(() => setElapsed(formatElapsedSince(active.log.started_at)), 1000)
@@ -45,6 +52,7 @@ export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscar
     s.completed = true
     s.completed_at = new Date().toISOString()
     onUpdate(updated)
+    setLastCompleted({ exIdx: active.current_exercise_index, setIdx })
     timer.start(restSecs)
   }, [active, onUpdate, timer])
 
@@ -53,6 +61,56 @@ export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscar
     const s = updated.log.exercises[active.current_exercise_index].sets[setIdx]
     s.completed = false
     s.completed_at = undefined
+    onUpdate(updated)
+  }, [active, onUpdate])
+
+  // Skip rest: end the timer, set stays completed
+  const handleSkipRest = useCallback(() => {
+    timer.skip()
+    setLastCompleted(null)
+  }, [timer])
+
+  // Cancel: undo the set that was just completed and end the timer
+  const handleCancelSet = useCallback(() => {
+    if (lastCompleted) {
+      const updated: ActiveWorkout = JSON.parse(JSON.stringify(active))
+      const s = updated.log.exercises[lastCompleted.exIdx].sets[lastCompleted.setIdx]
+      s.completed = false
+      s.completed_at = undefined
+      onUpdate(updated)
+    }
+    timer.stop()
+    setLastCompleted(null)
+  }, [active, onUpdate, timer, lastCompleted])
+
+  const updateExercise = useCallback((patch: Partial<Exercise>) => {
+    const updated: ActiveWorkout = JSON.parse(JSON.stringify(active))
+    const i = active.current_exercise_index
+    updated.session.exercises[i] = { ...updated.session.exercises[i], ...patch }
+    onUpdate(updated)
+  }, [active, onUpdate])
+
+  const addExercise = useCallback((exercise: Exercise) => {
+    const updated: ActiveWorkout = JSON.parse(JSON.stringify(active))
+    updated.session.exercises.push(exercise)
+    updated.log.exercises.push({
+      exercise_id: exercise.id,
+      exercise_name: exercise.name,
+      muscle: exercise.muscle,
+      notes: exercise.notes,
+      sets: Array.from({ length: exercise.sets }, (_, i) => ({ set_number: i + 1, reps_target: exercise.reps, completed: false })),
+    })
+    updated.current_exercise_index = updated.session.exercises.length - 1
+    onUpdate(updated)
+  }, [active, onUpdate])
+
+  const removeExercise = useCallback((idx: number) => {
+    const updated: ActiveWorkout = JSON.parse(JSON.stringify(active))
+    updated.session.exercises.splice(idx, 1)
+    updated.log.exercises.splice(idx, 1)
+    if (updated.current_exercise_index >= updated.session.exercises.length) {
+      updated.current_exercise_index = Math.max(0, updated.session.exercises.length - 1)
+    }
     onUpdate(updated)
   }, [active, onUpdate])
 
@@ -75,6 +133,52 @@ export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscar
     onFinish(updated)
   }
 
+  // Add-exercise form
+  if (adding) {
+    return (
+      <div className="fixed inset-0 z-50 bg-[#0f0f0f] flex flex-col">
+        <div className="flex items-center gap-3 px-4 pt-12 pb-3 border-b border-[#1a1a1a]">
+          <button onClick={() => setAdding(null)} className="p-1 text-[#a3a3a3]"><X size={20} /></button>
+          <h2 className="text-white font-semibold flex-1">Adicionar exercício</h2>
+          <button onClick={() => { if (adding.name.trim()) { addExercise(adding); setAdding(null) } }}
+            disabled={!adding.name.trim()}
+            className="px-4 py-1.5 bg-[#f97316] rounded-lg text-white text-sm font-semibold disabled:opacity-40">
+            Adicionar
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6">
+          <ExerciseEditor
+            exercise={adding}
+            index={0}
+            canRemove={false}
+            onUpdate={patch => setAdding(prev => prev ? { ...prev, ...patch } : prev)}
+            onRemove={() => {}}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  // No exercises left (e.g. all removed)
+  if (!ex || !exLog) {
+    return (
+      <div className="flex flex-col h-full bg-[#0f0f0f]">
+        <div className="flex items-center justify-between px-4 pt-12 pb-3 border-b border-[#1a1a1a]">
+          <button onClick={onDiscard} className="p-2 -ml-2 text-[#737373]"><X size={20} /></button>
+          <p className="font-semibold text-sm text-white">{active.session.name}</p>
+          <span className="w-8" />
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
+          <p className="text-[#737373] text-sm">Sem exercícios neste treino.</p>
+          <button onClick={() => setAdding(newExerciseDraft())}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#f97316] rounded-xl text-white text-sm font-semibold">
+            <Plus size={16} />Adicionar exercício
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full bg-[#0f0f0f]">
       {timer.running && (
@@ -82,8 +186,8 @@ export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscar
           seconds={timer.seconds}
           total={timer.total}
           progress={timer.progress}
-          onSkip={timer.skip}
-          onStop={timer.stop}
+          onSkip={handleSkipRest}
+          onCancel={handleCancelSet}
         />
       )}
 
@@ -132,11 +236,19 @@ export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscar
       <div className="flex-1 overflow-y-auto px-4 pb-8">
         <div className="mt-3 mb-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-white">{ex.name}</h2>
+            <div className="min-w-0">
+              <h2 className="text-xl font-bold text-white truncate">{ex.name}</h2>
               <p className="text-sm text-[#737373] mt-0.5">{muscleLabel(ex.muscle)} · {equipmentLabel(ex.equipment)}</p>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {totalEx > 1 && (
+                <button
+                  onClick={() => { if (confirm(`Remover "${ex.name}" deste treino?`)) removeExercise(active.current_exercise_index) }}
+                  className="p-2 rounded-lg bg-[#1a1a1a] text-[#525252] hover:text-red-400"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
               <button
                 onClick={() => goToExercise(active.current_exercise_index - 1)}
                 disabled={active.current_exercise_index === 0}
@@ -171,7 +283,14 @@ export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscar
             </div>
             <div className="px-3 py-1.5 bg-[#1a1a1a] rounded-lg text-center">
               <p className="text-xs text-[#737373]">Descanso</p>
-              <p className="text-sm font-bold text-white">{ex.rest_seconds}s</p>
+              <div className="flex items-center justify-center">
+                <input
+                  type="number" min={0} value={ex.rest_seconds}
+                  onChange={e => updateExercise({ rest_seconds: parseInt(e.target.value) || 0 })}
+                  className="w-9 bg-transparent text-sm font-bold text-white text-center outline-none focus:text-[#f97316]"
+                />
+                <span className="text-sm font-bold text-white">s</span>
+              </div>
             </div>
             {ex.weight_suggestion && (
               <div className="px-3 py-1.5 bg-[#1a1a1a] rounded-lg text-center">
@@ -205,6 +324,15 @@ export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscar
             />
           ))}
         </div>
+
+        {/* Add exercise */}
+        <button
+          onClick={() => setAdding(newExerciseDraft())}
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 mt-3 border border-dashed border-[#2e2e2e] rounded-xl text-[#737373] text-xs hover:border-[#f97316]/50 hover:text-[#f97316] transition-colors"
+        >
+          <Plus size={14} />
+          Adicionar exercício
+        </button>
 
         {/* Other exercises overview */}
         <div className="mt-4">
