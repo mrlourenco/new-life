@@ -83,7 +83,7 @@ function isValidTemplate(t: unknown): t is MealTemplate {
     })
 }
 
-function isValidPlan(p: unknown): p is Omit<NutritionPlan, 'active'> {
+function isValidPlan(p: unknown): p is NutritionPlan {
   if (!p || typeof p !== 'object') return false
   const pp = p as Record<string, unknown>
   return typeof pp.id === 'string'
@@ -97,13 +97,13 @@ function isValidPlan(p: unknown): p is Omit<NutritionPlan, 'active'> {
     })
 }
 
-function validateImport(data: unknown): { templates?: MealTemplate[]; plan?: Omit<NutritionPlan, 'active'> } | null {
+function validateImport(data: unknown): { templates?: MealTemplate[]; plan?: NutritionPlan } | null {
   if (!data || typeof data !== 'object') return null
   const d = data as Record<string, unknown>
   if (d.version !== 2) return null
   if (d.templates !== undefined && (!Array.isArray(d.templates) || !d.templates.every(isValidTemplate))) return null
   if (d.plan !== undefined && !isValidPlan(d.plan)) return null
-  return { templates: d.templates as MealTemplate[] | undefined, plan: d.plan as Omit<NutritionPlan, 'active'> | undefined }
+  return { templates: d.templates as MealTemplate[] | undefined, plan: d.plan as NutritionPlan | undefined }
 }
 
 export default function NutritionPlansPage({ plans, templates, logs, onSave, onDelete, onImportTemplates }: Props) {
@@ -133,7 +133,7 @@ export default function NutritionPlansPage({ plans, templates, logs, onSave, onD
         const parsed = validateImport(data)
         if (!parsed) throw new Error('Formato inválido (version: 2 necessário)')
         if (parsed.templates?.length) onImportTemplates(parsed.templates)
-        if (parsed.plan) onSave({ ...parsed.plan, active: false })
+        if (parsed.plan) onSave(parsed.plan)
         setError(null)
       } catch (err) { setError((err as Error).message) }
     }

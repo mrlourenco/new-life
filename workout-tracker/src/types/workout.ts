@@ -10,6 +10,7 @@ export interface Exercise {
   muscle: string
   equipment: string
   weight_suggestion?: string
+  target_weight?: number   // planned working weight (kg), pre-fills sets on start
 }
 
 export interface WorkoutSession {

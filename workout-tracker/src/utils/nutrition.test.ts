@@ -88,7 +88,6 @@ describe('getDayTemplateIds', () => {
   const plan: NutritionPlan = {
     id: 'p1',
     name: 'Plano',
-    active: true,
     days: [{ day_of_week: 5, template_ids: ['t-friday'] }], // Friday
   }
   const assignment: WeekAssignment = {

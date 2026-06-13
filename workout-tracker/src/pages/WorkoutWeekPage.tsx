@@ -14,6 +14,7 @@ interface Props {
   assignments: WorkoutWeekAssignment[]
   onAssignPlan: (weekStart: string, planId: string | null) => void
   onSaveDayOverride: (weekStart: string, date: string, sessionIds: string[]) => void
+  onUpdatePlan: (plan: WorkoutPlan) => void
 }
 
 function PlanPicker({ plans, currentPlanId, onSelect, onClose }: {
@@ -132,7 +133,7 @@ function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave,
   )
 }
 
-export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assignments, onAssignPlan, onSaveDayOverride }: Props) {
+export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assignments, onAssignPlan, onSaveDayOverride, onUpdatePlan }: Props) {
   const [weekOffset, setWeekOffset] = useState(0)
   const [showPlanPicker, setShowPlanPicker] = useState(false)
   const [editingDate, setEditingDate] = useState<string | null>(null)
@@ -173,6 +174,7 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
       <SessionDetail
         plan={viewing.plan}
         session={viewing.session}
+        onUpdatePlan={onUpdatePlan}
         onClose={() => setViewing(null)}
       />
     )

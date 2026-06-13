@@ -69,7 +69,6 @@ export interface NutritionPlan extends Timestamped {
   description?: string
   goal?: 'weight_loss' | 'muscle_gain' | 'maintenance' | 'general'
   daily_calories_target?: number
-  active: boolean
   days: PlanDay[]
 }
 
@@ -91,5 +90,5 @@ export interface WeekAssignment extends Timestamped {
 export interface NutritionImport {
   version: 2
   templates?: MealTemplate[]
-  plan?: Omit<NutritionPlan, 'active'>
+  plan?: NutritionPlan
 }

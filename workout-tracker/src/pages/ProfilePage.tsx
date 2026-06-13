@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Trash2, Scale, Target } from 'lucide-react'
 import type { MacroTargets, WeightEntry } from '../types/profile'
-import type { DayNutritionLog, NutritionPlan } from '../types/nutrition'
+import type { DayNutritionLog, NutritionPlan, WeekAssignment } from '../types/nutrition'
 import NutritionEvolutionPage from './nutrition/NutritionEvolutionPage'
 import BackupSection from '../components/BackupSection'
 
@@ -44,6 +44,7 @@ interface Props {
   weekStartDay: 0 | 1
   nutritionLogs: DayNutritionLog[]
   nutritionPlans: NutritionPlan[]
+  nutritionAssignments: WeekAssignment[]
   today: string
   onSaveMacroTargets: (t: MacroTargets) => void
   onSaveWeekStartDay: (d: 0 | 1) => void
@@ -53,7 +54,7 @@ interface Props {
 }
 
 export default function ProfilePage({
-  macroTargets, weightEntries, weekStartDay, nutritionLogs, nutritionPlans, today,
+  macroTargets, weightEntries, weekStartDay, nutritionLogs, nutritionPlans, nutritionAssignments, today,
   onSaveMacroTargets, onSaveWeekStartDay, onAddWeightEntry, onDeleteWeightEntry, onDeleteNutritionLog,
 }: Props) {
   const [tab, setTab] = useState<ProfileTab>('perfil')
@@ -106,7 +107,7 @@ export default function ProfilePage({
 
       {tab === 'evolucao' && (
         <NutritionEvolutionPage
-          logs={nutritionLogs} plans={nutritionPlans} today={today} weekStartDay={weekStartDay} onDeleteLog={onDeleteNutritionLog}
+          logs={nutritionLogs} plans={nutritionPlans} assignments={nutritionAssignments} today={today} weekStartDay={weekStartDay} onDeleteLog={onDeleteNutritionLog}
         />
       )}
 

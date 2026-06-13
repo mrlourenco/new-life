@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
-import type { DayNutritionLog, NutritionPlan } from '../../types/nutrition'
+import type { DayNutritionLog, NutritionPlan, WeekAssignment } from '../../types/nutrition'
 import { MEAL_CATEGORIES } from '../../types/nutrition'
-import { dayTotals, entryMacros, getActivePlan, getWeekDates, getMonthDates, dowShort } from '../../utils/nutrition'
+import { dayTotals, entryMacros, getWeekDates, getMonthDates, dowShort } from '../../utils/nutrition'
 import MacroBar from '../../components/nutrition/MacroBar'
 import CalorieChart, { MacroLegend } from '../../components/nutrition/CalorieChart'
 
 interface Props {
   logs: DayNutritionLog[]
   plans: NutritionPlan[]
+  assignments: WeekAssignment[]
   today: string
   weekStartDay: 0 | 1
   onDeleteLog: (id: string) => void
@@ -16,13 +17,17 @@ interface Props {
 
 type View = 'week' | 'month' | 'day'
 
-export default function NutritionEvolutionPage({ logs, plans, today, weekStartDay, onDeleteLog }: Props) {
+export default function NutritionEvolutionPage({ logs, plans, assignments, today, weekStartDay, onDeleteLog }: Props) {
   const [view, setView] = useState<View>('week')
   const [offset, setOffset] = useState(0)   // week/month offset from current
   const [detailDate, setDetailDate] = useState<string | null>(null)
 
-  const activePlan = getActivePlan(plans)
-  const target = activePlan?.daily_calories_target
+  // Daily calorie target comes from the plan assigned to that week
+  const targetForWeek = (weekStartStr: string) => {
+    const a = assignments.find(x => x.week_start === weekStartStr)
+    const p = a?.plan_id ? plans.find(pl => pl.id === a.plan_id) : null
+    return p?.daily_calories_target
+  }
 
   // Derive reference date from offset
   const refDate = (() => {
@@ -39,6 +44,7 @@ export default function NutritionEvolutionPage({ logs, plans, today, weekStartDa
   if (detailDate) {
     const entries = [...(dayLog?.entries ?? [])].sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''))
     const totals = dayLog ? dayTotals(dayLog) : null
+    const target = targetForWeek(getWeekDates(detailDate, weekStartDay)[0])
     const label = new Date(detailDate + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
     return (
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
@@ -102,6 +108,7 @@ export default function NutritionEvolutionPage({ logs, plans, today, weekStartDa
   // Week view
   if (view === 'week') {
     const weekDates = getWeekDates(refDate, weekStartDay)
+    const target = targetForWeek(weekDates[0])
     const weekStart = new Date(weekDates[0] + 'T12:00:00').toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' })
     const weekEnd = new Date(weekDates[6] + 'T12:00:00').toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' })
     const bars = weekDates.map(date => {
@@ -174,6 +181,7 @@ export default function NutritionEvolutionPage({ logs, plans, today, weekStartDa
 
   // Month view
   const refD = new Date(refDate + 'T12:00:00')
+  const target = targetForWeek(getWeekDates(today, weekStartDay)[0])
   const monthDates = getMonthDates(refD.getFullYear(), refD.getMonth())
   const monthLabel = refD.toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' })
   const firstDow = (new Date(refD.getFullYear(), refD.getMonth(), 1).getDay() + 6) % 7 // Mon=0

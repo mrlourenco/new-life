@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { X, Play, Clock } from 'lucide-react'
 import type { WorkoutPlan, WorkoutSession } from '../../types/workout'
 import { muscleLabel, equipmentLabel } from '../../utils/labels'
@@ -6,6 +7,7 @@ interface Props {
   plan: WorkoutPlan
   session: WorkoutSession
   onStart?: (plan: WorkoutPlan, session: WorkoutSession) => void
+  onUpdatePlan?: (plan: WorkoutPlan) => void
   onClose: () => void
 }
 
@@ -28,7 +30,25 @@ function muscleClass(m: string) {
 
 // Read-only preview of a session's exercises — lets you see the workout
 // content without starting it.
-export default function SessionDetail({ plan, session, onStart, onClose }: Props) {
+export default function SessionDetail({ plan, session, onStart, onUpdatePlan, onClose }: Props) {
+  const [targets, setTargets] = useState<Record<string, number | undefined>>(
+    () => Object.fromEntries(session.exercises.map(e => [e.id, e.target_weight]))
+  )
+
+  const setTarget = (exId: string, value: number | undefined) => {
+    const next = { ...targets, [exId]: value }
+    setTargets(next)
+    if (onUpdatePlan) {
+      onUpdatePlan({
+        ...plan,
+        sessions: plan.sessions.map(s => s.id !== session.id ? s : {
+          ...s,
+          exercises: s.exercises.map(e => ({ ...e, target_weight: next[e.id] })),
+        }),
+      })
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-[#0f0f0f] flex flex-col">
       <div className="flex items-center gap-3 px-4 pt-12 pb-3 border-b border-[#1a1a1a]">
@@ -64,6 +84,21 @@ export default function SessionDetail({ plan, session, onStart, onClose }: Props
                     {ex.weight_suggestion && <span className="text-[11px] text-[#f97316]">{ex.weight_suggestion}</span>}
                   </div>
                   {ex.notes && <p className="text-[10px] text-[#737373] italic mt-1">{ex.notes}</p>}
+                  {onUpdatePlan && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[10px] text-[#737373] uppercase tracking-wider font-semibold">Peso-alvo</span>
+                      <div className="flex items-center gap-1 bg-[#0f0f0f] border border-[#2e2e2e] rounded-lg px-2 py-1 focus-within:border-[#f97316]">
+                        <input
+                          type="number" inputMode="decimal" min={0} step="0.5"
+                          value={targets[ex.id] ?? ''}
+                          onChange={e => setTarget(ex.id, e.target.value === '' ? undefined : (parseFloat(e.target.value) || 0))}
+                          placeholder="—"
+                          className="w-12 bg-transparent text-sm text-white text-center outline-none"
+                        />
+                        <span className="text-[10px] text-[#525252]">kg</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
