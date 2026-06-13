@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Play, Zap, Pencil, Trash2, Clock, CheckCircle2, X, Dumbbell } from 'lucide-react'
+import { Play, Zap, Pencil, Trash2, Clock, CheckCircle2, X, Dumbbell, Plus } from 'lucide-react'
 import type { WorkoutPlan, WorkoutSession, ActiveWorkout, WorkoutLog, WorkoutWeekAssignment } from '../types/workout'
 import { muscleLabel } from '../utils/labels'
 import { formatDurationSeconds } from '../utils/format'
@@ -26,19 +26,19 @@ interface Props {
   onSaveDayOverride: (weekStart: string, date: string, sessionIds: string[]) => void
 }
 
-function AddWorkoutSheet({ plans, onAdHoc, onStart, onClose }: {
+function AddWorkoutSheet({ plans, onAdHoc, onPlan, onClose }: {
   plans: WorkoutPlan[]
   onAdHoc: () => void
-  onStart: (plan: WorkoutPlan, session: WorkoutSession) => void
+  onPlan: (plan: WorkoutPlan, session: WorkoutSession) => void
   onClose: () => void
 }) {
-  const allSessions = plans.flatMap(p => p.sessions.map(s => ({ plan: p, session: s })))
+  const allSessions = plans.filter(p => p.id !== ADHOC_ID).flatMap(p => p.sessions.map(s => ({ plan: p, session: s })))
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex flex-col justify-end" onClick={onClose}>
       <div className="bg-[#0f0f0f] rounded-t-2xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#1a1a1a] flex-shrink-0">
-          <h3 className="text-white font-semibold">Adicionar treino</h3>
+          <h3 className="text-white font-semibold">Planear treino para hoje</h3>
           <button onClick={onClose} className="p-1 text-[#a3a3a3]"><X size={18} /></button>
         </div>
 
@@ -48,17 +48,17 @@ function AddWorkoutSheet({ plans, onAdHoc, onStart, onClose }: {
             <Dumbbell size={18} className="text-[#f97316] flex-shrink-0" />
             <div className="text-left">
               <p className="text-white text-sm font-semibold">Treino livre (ad-hoc)</p>
-              <p className="text-[#737373] text-xs mt-0.5">Cria um treino personalizado</p>
+              <p className="text-[#737373] text-xs mt-0.5">Configura um treino personalizado</p>
             </div>
           </button>
 
           {allSessions.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] text-[#525252] uppercase tracking-wider font-semibold">Ou seleciona uma sessão</p>
+              <p className="text-[10px] text-[#525252] uppercase tracking-wider font-semibold">Ou adiciona uma sessão</p>
               {allSessions.map(({ plan, session }) => (
-                <button key={session.id} onClick={() => onStart(plan, session)}
+                <button key={session.id} onClick={() => onPlan(plan, session)}
                   className="w-full flex items-center gap-3 px-4 py-3 bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl hover:border-[#f97316]/40 transition-colors text-left">
-                  <Play size={14} className="text-[#f97316] flex-shrink-0" fill="currentColor" />
+                  <Plus size={14} className="text-[#f97316] flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">{session.name}</p>
                     <p className="text-[10px] text-[#525252] mt-0.5">
@@ -95,6 +95,8 @@ export default function TodayPage({
     .map(id => findSession(plans, id))
     .filter(Boolean) as { plan: WorkoutPlan; session: WorkoutSession }[]
 
+  const getWeekStart = () => getWeekDates(today, weekStartDay)[0]
+
   const handleBuilderSave = (_plan: WorkoutPlan, session: WorkoutSession) => {
     const existingAdhoc = plans.find(p => p.id === ADHOC_ID)
     onUpdatePlan({
@@ -104,16 +106,22 @@ export default function TodayPage({
       days_per_week: 0,
       sessions: [...(existingAdhoc?.sessions ?? []), session],
     })
-    const weekStart = getWeekDates(today, weekStartDay)[0]
     const existingIds = sessionIds.filter(id => id !== ADHOC_ID)
-    onSaveDayOverride(weekStart, today, [...existingIds, session.id])
+    onSaveDayOverride(getWeekStart(), today, [...existingIds, session.id])
     setShowBuilder(false)
+  }
+
+  const handlePlanSession = (_plan: WorkoutPlan, session: WorkoutSession) => {
+    if (!sessionIds.includes(session.id)) {
+      const existingIds = sessionIds.filter(id => id !== ADHOC_ID)
+      onSaveDayOverride(getWeekStart(), today, [...existingIds, session.id])
+    }
+    setShowAdder(false)
   }
 
   if (showBuilder) {
     return (
       <AdHocWorkoutBuilder
-        onStart={(plan, session) => { onStart(plan, session); setShowBuilder(false) }}
         onSave={handleBuilderSave}
         onClose={() => setShowBuilder(false)}
       />
@@ -227,10 +235,10 @@ export default function TodayPage({
             {hasAdHoc && (
               <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-dashed border-[#f97316]/30">
                 <p className="text-white font-semibold mb-0.5">Treino livre</p>
-                <p className="text-[#737373] text-xs mb-3">Ad-hoc planeado para hoje</p>
+                <p className="text-[#737373] text-xs mb-3">Por configurar</p>
                 <button onClick={() => setShowBuilder(true)}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#f97316] rounded-xl text-white text-sm font-semibold hover:bg-[#ea6c0a] transition-colors">
-                  <Dumbbell size={15} />Criar e iniciar
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#1a1a1a] border border-[#f97316]/40 rounded-xl text-[#f97316] text-sm font-semibold hover:border-[#f97316]/70 transition-colors">
+                  <Dumbbell size={15} />Configurar treino
                 </button>
               </div>
             )}
@@ -242,7 +250,7 @@ export default function TodayPage({
             <Zap size={24} className="text-[#f97316]" />
           </div>
           <p className="text-white font-semibold">Sem treino planeado</p>
-          <p className="text-[#737373] text-sm mt-1 max-w-xs">Planeia a semana no separador Semana ou começa um treino agora</p>
+          <p className="text-[#737373] text-sm mt-1 max-w-xs">Adiciona um treino abaixo ou planeia a semana no separador Semana</p>
         </div>
       )}
 
@@ -250,7 +258,7 @@ export default function TodayPage({
         onClick={() => setShowAdder(true)}
         className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#1a1a1a] border border-[#2e2e2e] rounded-2xl text-[#a3a3a3] text-sm font-medium hover:border-[#f97316]/40 hover:text-[#f97316] transition-colors"
       >
-        <Play size={15} fill="currentColor" />
+        <Plus size={15} />
         Adicionar treino
       </button>
 
@@ -258,7 +266,7 @@ export default function TodayPage({
         <AddWorkoutSheet
           plans={plans}
           onAdHoc={() => { setShowAdder(false); setShowBuilder(true) }}
-          onStart={(p, s) => { setShowAdder(false); onStart(p, s) }}
+          onPlan={handlePlanSession}
           onClose={() => setShowAdder(false)}
         />
       )}
