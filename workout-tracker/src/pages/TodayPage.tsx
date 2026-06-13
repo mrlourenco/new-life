@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Play, Zap, Pencil, Trash2, Clock, CheckCircle2 } from 'lucide-react'
+import { Play, Zap, Pencil, Trash2, Clock, CheckCircle2, Plus } from 'lucide-react'
 import type { WorkoutPlan, WorkoutSession, ActiveWorkout, WorkoutLog, WorkoutWeekAssignment } from '../types/workout'
 import { muscleLabel } from '../utils/labels'
 import { formatDurationSeconds } from '../utils/format'
 import { getDaySessionIds, findSession } from '../utils/workout'
 import WorkoutLogEditor from '../components/workout/WorkoutLogEditor'
 import SessionDetail from '../components/workout/SessionDetail'
+import AdHocWorkoutBuilder from '../components/AdHocWorkoutBuilder'
 
 interface Props {
   today: string
@@ -41,6 +42,7 @@ function muscleClass(m: string) {
 export default function TodayPage({ today, plans, active, logs, assignments, weekStartDay, onStart, onResume, onUpdateLog, onDeleteLog, onUpdatePlan }: Props) {
   const [editingLog, setEditingLog] = useState<WorkoutLog | null>(null)
   const [viewing, setViewing] = useState<{ plan: WorkoutPlan; session: WorkoutSession } | null>(null)
+  const [showBuilder, setShowBuilder] = useState(false)
 
   const dateLabel = new Date(today + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
 
@@ -48,6 +50,15 @@ export default function TodayPage({ today, plans, active, logs, assignments, wee
   const scheduled = getDaySessionIds(today, assignments, plans, weekStartDay)
     .map(id => findSession(plans, id))
     .filter(Boolean) as { plan: WorkoutPlan; session: WorkoutSession }[]
+
+  if (showBuilder) {
+    return (
+      <AdHocWorkoutBuilder
+        onStart={(plan, session) => { onStart(plan, session); setShowBuilder(false) }}
+        onClose={() => setShowBuilder(false)}
+      />
+    )
+  }
 
   if (editingLog) {
     return (
@@ -150,12 +161,12 @@ export default function TodayPage({ today, plans, active, logs, assignments, wee
 
       {/* All workouts / empty state */}
       {plans.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="flex flex-col items-center justify-center py-14 text-center">
           <div className="w-16 h-16 bg-[#1a1a1a] rounded-full flex items-center justify-center mb-4">
             <Zap size={28} className="text-[#f97316]" />
           </div>
           <p className="text-white font-semibold text-lg">Sem planos de treino</p>
-          <p className="text-[#737373] text-sm mt-1 max-w-xs">Importa ou cria um plano no separador Planos para começar</p>
+          <p className="text-[#737373] text-sm mt-1 max-w-xs">Importa ou cria um plano no separador Planos, ou começa um treino livre</p>
         </div>
       ) : (
         <div>
@@ -169,6 +180,17 @@ export default function TodayPage({ today, plans, active, logs, assignments, wee
           </div>
         </div>
       )}
+
+      {/* Ad-hoc workout */}
+      <div className="mt-6 pt-5 border-t border-[#1a1a1a]">
+        <button
+          onClick={() => setShowBuilder(true)}
+          className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#1a1a1a] border border-[#2e2e2e] rounded-2xl text-[#a3a3a3] text-sm font-medium hover:border-[#f97316]/40 hover:text-[#f97316] transition-colors"
+        >
+          <Plus size={16} />
+          Treino livre (ad-hoc)
+        </button>
+      </div>
     </div>
   )
 }
