@@ -58,7 +58,7 @@ export default function WorkoutPage({
             today={today} plans={plans} active={active} logs={logs}
             assignments={assignments} weekStartDay={weekStartDay}
             onStart={onStart} onResume={onResume} onUpdateLog={onUpdateLog} onDeleteLog={onDeleteLog}
-            onUpdatePlan={onAddPlan}
+            onUpdatePlan={onAddPlan} onSaveDayOverride={onSaveDayOverride}
           />
         )}
         {tab === 'semana' && (
