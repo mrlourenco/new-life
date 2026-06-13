@@ -43,17 +43,22 @@ export default function App() {
         session_name: session.name,
         date: localISODate(),
         started_at: now,
-        exercises: session.exercises.map(ex => ({
-          exercise_id: ex.id,
-          exercise_name: ex.name,
-          muscle: ex.muscle,
-          notes: ex.notes,
-          sets: Array.from({ length: ex.sets }, (_, i) => ({
-            set_number: i + 1,
-            reps_target: ex.reps,
-            completed: false,
-          })),
-        })),
+        exercises: session.exercises.map(ex => {
+          const hist = exerciseHistory.get(ex.name.toLowerCase().trim())
+          return {
+            exercise_id: ex.id,
+            exercise_name: ex.name,
+            muscle: ex.muscle,
+            notes: ex.notes,
+            sets: Array.from({ length: ex.sets }, (_, i) => ({
+              set_number: i + 1,
+              reps_target: ex.reps,
+              // pre-fill: planned target weight, else what was lifted last time
+              weight_kg: ex.target_weight ?? hist?.sets[i]?.weight_kg ?? hist?.sets[hist.sets.length - 1]?.weight_kg,
+              completed: false,
+            })),
+          }
+        }),
       },
       session,
       current_exercise_index: 0,

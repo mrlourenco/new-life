@@ -18,6 +18,7 @@ interface Props {
   onResume: () => void
   onUpdateLog: (log: WorkoutLog) => void
   onDeleteLog: (id: string) => void
+  onUpdatePlan: (plan: WorkoutPlan) => void
 }
 
 const MUSCLE_COLORS: Record<string, string> = {
@@ -37,7 +38,7 @@ function muscleClass(m: string) {
   return MUSCLE_COLORS[m.toLowerCase()] ?? 'bg-[#2e2e2e] text-[#a3a3a3]'
 }
 
-export default function TodayPage({ today, plans, active, logs, assignments, weekStartDay, onStart, onResume, onUpdateLog, onDeleteLog }: Props) {
+export default function TodayPage({ today, plans, active, logs, assignments, weekStartDay, onStart, onResume, onUpdateLog, onDeleteLog, onUpdatePlan }: Props) {
   const [editingLog, setEditingLog] = useState<WorkoutLog | null>(null)
   const [viewing, setViewing] = useState<{ plan: WorkoutPlan; session: WorkoutSession } | null>(null)
 
@@ -65,6 +66,7 @@ export default function TodayPage({ today, plans, active, logs, assignments, wee
         plan={viewing.plan}
         session={viewing.session}
         onStart={(p, s) => { setViewing(null); onStart(p, s) }}
+        onUpdatePlan={onUpdatePlan}
         onClose={() => setViewing(null)}
       />
     )
