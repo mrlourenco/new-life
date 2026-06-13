@@ -90,10 +90,16 @@ export default function TodayPage({
   const todayLogs = logs.filter(l => l.date === today)
   const sessionIds = getDaySessionIds(today, assignments, plans, weekStartDay)
   const hasAdHoc = sessionIds.includes(ADHOC_ID)
+
+  // Keep original index so we can remove by position (allows duplicates)
   const scheduled = sessionIds
-    .filter(id => id !== ADHOC_ID)
-    .map(id => findSession(plans, id))
-    .filter(Boolean) as { plan: WorkoutPlan; session: WorkoutSession }[]
+    .map((id, origIdx) => ({ id, origIdx }))
+    .filter(({ id }) => id !== ADHOC_ID)
+    .map(({ id, origIdx }) => {
+      const found = findSession(plans, id)
+      return found ? { ...found, origIdx } : null
+    })
+    .filter(Boolean) as ({ plan: WorkoutPlan; session: WorkoutSession; origIdx: number })[]
 
   const getWeekStart = () => getWeekDates(today, weekStartDay)[0]
 
@@ -112,11 +118,13 @@ export default function TodayPage({
   }
 
   const handlePlanSession = (_plan: WorkoutPlan, session: WorkoutSession) => {
-    if (!sessionIds.includes(session.id)) {
-      const existingIds = sessionIds.filter(id => id !== ADHOC_ID)
-      onSaveDayOverride(getWeekStart(), today, [...existingIds, session.id])
-    }
+    onSaveDayOverride(getWeekStart(), today, [...sessionIds, session.id])
     setShowAdder(false)
+  }
+
+  const handleRemoveSession = (origIdx: number) => {
+    const newIds = sessionIds.filter((_, i) => i !== origIdx)
+    onSaveDayOverride(getWeekStart(), today, newIds)
   }
 
   if (showBuilder) {
@@ -217,15 +225,21 @@ export default function TodayPage({
         <div className="mb-6">
           <p className="text-xs text-[#737373] uppercase tracking-wider font-semibold mb-3">Planeado para hoje</p>
           <div className="space-y-3">
-            {scheduled.map(({ plan, session }) => (
-              <div key={session.id} className="bg-[#1a1a1a] rounded-2xl p-4">
-                <button onClick={() => setViewing({ plan, session })} className="w-full text-left mb-3">
-                  <p className="text-white font-semibold">{session.name}</p>
-                  <p className="text-[#737373] text-xs mt-0.5">
-                    {session.exercises.length} exercícios
-                    {session.muscle_groups.length > 0 && ` · ${session.muscle_groups.map(muscleLabel).join(', ')}`}
-                  </p>
-                </button>
+            {scheduled.map(({ plan, session, origIdx }) => (
+              <div key={origIdx} className="bg-[#1a1a1a] rounded-2xl p-4">
+                <div className="flex items-start gap-2 mb-3">
+                  <button onClick={() => setViewing({ plan, session })} className="flex-1 text-left">
+                    <p className="text-white font-semibold">{session.name}</p>
+                    <p className="text-[#737373] text-xs mt-0.5">
+                      {session.exercises.length} exercícios
+                      {session.muscle_groups.length > 0 && ` · ${session.muscle_groups.map(muscleLabel).join(', ')}`}
+                    </p>
+                  </button>
+                  <button onClick={() => handleRemoveSession(origIdx)}
+                    className="p-1.5 text-[#525252] hover:text-red-400 flex-shrink-0 -mt-0.5">
+                    <X size={15} />
+                  </button>
+                </div>
                 <button onClick={() => onStart(plan, session)}
                   className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#f97316] rounded-xl text-white text-sm font-semibold hover:bg-[#ea6c0a] transition-colors">
                   <Play size={15} fill="currentColor" />Iniciar

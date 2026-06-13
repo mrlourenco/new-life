@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { X, Play, Clock } from 'lucide-react'
-import type { WorkoutPlan, WorkoutSession } from '../../types/workout'
+import { X, Play, Clock, Trash2 } from 'lucide-react'
+import type { WorkoutPlan, WorkoutSession, Exercise } from '../../types/workout'
 import { muscleLabel, equipmentLabel } from '../../utils/labels'
 
 interface Props {
@@ -28,26 +28,28 @@ function muscleClass(m: string) {
   return MUSCLE_COLORS[m.toLowerCase()] ?? 'bg-[#2e2e2e] text-[#a3a3a3]'
 }
 
-// Read-only preview of a session's exercises — lets you see the workout
-// content without starting it.
 export default function SessionDetail({ plan, session, onStart, onUpdatePlan, onClose }: Props) {
-  const [targets, setTargets] = useState<Record<string, number | undefined>>(
-    () => Object.fromEntries(session.exercises.map(e => [e.id, e.target_weight]))
-  )
+  const [exercises, setExercises] = useState<Exercise[]>(() => session.exercises.map(e => ({ ...e })))
 
-  const setTarget = (exId: string, value: number | undefined) => {
-    const next = { ...targets, [exId]: value }
-    setTargets(next)
+  const updateExercises = (next: Exercise[]) => {
+    setExercises(next)
     if (onUpdatePlan) {
       onUpdatePlan({
         ...plan,
-        sessions: plan.sessions.map(s => s.id !== session.id ? s : {
-          ...s,
-          exercises: s.exercises.map(e => ({ ...e, target_weight: next[e.id] })),
-        }),
+        sessions: plan.sessions.map(s => s.id !== session.id ? s : { ...s, exercises: next }),
       })
     }
   }
+
+  const setTarget = (exId: string, value: number | undefined) => {
+    updateExercises(exercises.map(e => e.id === exId ? { ...e, target_weight: value } : e))
+  }
+
+  const deleteExercise = (exId: string) => {
+    updateExercises(exercises.filter(e => e.id !== exId))
+  }
+
+  const effectiveSession = { ...session, exercises }
 
   return (
     <div className="fixed inset-0 z-50 bg-[#0f0f0f] flex flex-col">
@@ -68,10 +70,10 @@ export default function SessionDetail({ plan, session, onStart, onUpdatePlan, on
           </div>
         )}
 
-        <p className="text-xs text-[#525252]">{session.exercises.length} exercícios</p>
+        <p className="text-xs text-[#525252]">{exercises.length} exercícios</p>
 
         <div className="space-y-2">
-          {session.exercises.map((ex, i) => (
+          {exercises.map((ex, i) => (
             <div key={ex.id} className="bg-[#1a1a1a] rounded-2xl px-4 py-3">
               <div className="flex items-start gap-3">
                 <span className="text-xs text-[#525252] font-semibold mt-0.5 w-4 flex-shrink-0">{i + 1}</span>
@@ -90,7 +92,7 @@ export default function SessionDetail({ plan, session, onStart, onUpdatePlan, on
                       <div className="flex items-center gap-1 bg-[#0f0f0f] border border-[#2e2e2e] rounded-lg px-2 py-1 focus-within:border-[#f97316]">
                         <input
                           type="number" inputMode="decimal" min={0} step="0.5"
-                          value={targets[ex.id] ?? ''}
+                          value={ex.target_weight ?? ''}
                           onChange={e => setTarget(ex.id, e.target.value === '' ? undefined : (parseFloat(e.target.value) || 0))}
                           placeholder="—"
                           className="w-12 bg-transparent text-sm text-white text-center outline-none"
@@ -100,6 +102,12 @@ export default function SessionDetail({ plan, session, onStart, onUpdatePlan, on
                     </div>
                   )}
                 </div>
+                {onUpdatePlan && (
+                  <button onClick={() => deleteExercise(ex.id)}
+                    className="p-1.5 text-[#525252] hover:text-red-400 flex-shrink-0 -mt-0.5">
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -108,8 +116,10 @@ export default function SessionDetail({ plan, session, onStart, onUpdatePlan, on
 
       {onStart && (
         <div className="px-4 pb-8 pt-2 border-t border-[#1a1a1a]">
-          <button onClick={() => onStart(plan, session)}
-            className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#f97316] rounded-xl text-white font-semibold hover:bg-[#ea6c0a] transition-colors">
+          <button
+            onClick={() => onStart(plan, effectiveSession)}
+            disabled={exercises.length === 0}
+            className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#f97316] rounded-xl text-white font-semibold hover:bg-[#ea6c0a] transition-colors disabled:opacity-40">
             <Play size={18} fill="currentColor" />
             Iniciar treino
           </button>
