@@ -44,7 +44,6 @@ export default function NutritionPlanBuilder({ templates, onSave, onCancel }: Pr
       description: description || undefined,
       goal,
       daily_calories_target: target ? parseInt(target) : undefined,
-      active: false,
       days: DAYS.filter(d => (days[d] ?? []).length > 0).map(d => ({ day_of_week: d, template_ids: days[d] })),
     }
     onSave(plan)

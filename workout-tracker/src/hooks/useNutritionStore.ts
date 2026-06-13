@@ -63,16 +63,5 @@ export function useNutritionPlans() {
     setPlans(prev => { const u = prev.filter(p => p.id !== id); saveJSON(STORAGE_KEYS.nutritionPlans, u); return u })
   }, [])
 
-  const setActivePlan = useCallback((id: string | null) => {
-    setPlans(prev => {
-      const u = prev.map(p => {
-        const active = p.id === id
-        return active === p.active ? p : stamp({ ...p, active })
-      })
-      saveJSON(STORAGE_KEYS.nutritionPlans, u)
-      return u
-    })
-  }, [])
-
-  return { plans, savePlan, deletePlan, setActivePlan }
+  return { plans, savePlan, deletePlan }
 }

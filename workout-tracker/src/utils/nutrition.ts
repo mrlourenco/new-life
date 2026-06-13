@@ -31,10 +31,6 @@ export function dayTotals(log: DayNutritionLog): DayMacros {
   return { calories, protein_g, carbs_g, fat_g, fiber_g }
 }
 
-export function getActivePlan(plans: NutritionPlan[]): NutritionPlan | null {
-  return plans.find(p => p.active) ?? null
-}
-
 export function getSuggestedTemplateIds(plan: NutritionPlan | null, date: string): string[] {
   if (!plan) return []
   const dow = new Date(date + 'T12:00:00').getDay()

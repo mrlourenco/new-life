@@ -145,6 +145,7 @@ export default function App() {
             weekStartDay={profile.week_start_day}
             nutritionLogs={nutritionLogs}
             nutritionPlans={nutritionPlans}
+            nutritionAssignments={assignments}
             today={today}
             onSaveMacroTargets={saveMacroTargets}
             onSaveWeekStartDay={saveWeekStartDay}
