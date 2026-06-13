@@ -203,7 +203,7 @@ export default function ProfilePage({
                     const pct = maxW === minW ? 50 : ((e.weight_kg - minW) / (maxW - minW)) * 100
                     const isLast = i === chartEntries.length - 1
                     return (
-                      <div key={e.id} className="flex-1 flex flex-col items-center">
+                      <div key={e.id} className="flex-1 flex flex-col items-center justify-end h-full">
                         <div className="w-full rounded-sm" style={{ height: `${Math.max(4, pct)}%`, background: isLast ? '#22c55e' : '#2e2e2e' }} />
                       </div>
                     )
