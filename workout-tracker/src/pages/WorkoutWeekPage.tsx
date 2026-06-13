@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, X, Pencil, Check, Calendar, Dumbbell, CheckCircle2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Pencil, Check, Calendar, Dumbbell, CheckCircle2, Play } from 'lucide-react'
 import type { WorkoutPlan, WorkoutSession, WorkoutLog, WorkoutWeekAssignment } from '../types/workout'
 import { getWeekDates } from '../utils/dates'
 import { getDaySessionIds, findSession } from '../utils/workout'
@@ -101,8 +101,26 @@ function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave,
           <p className="text-xs text-[#737373]">{selected.size} sessão(ões) selecionada(s)</p>
         )}
 
+        {/* Ad-hoc option */}
+        <div>
+          <p className="text-[11px] text-[#525252] font-semibold uppercase tracking-wider mb-2">Treino livre</p>
+          <button onClick={() => toggle('adhoc')}
+            className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${selected.has('adhoc') ? 'border-[#f97316] bg-[#f97316]/10' : 'border-dashed border-[#2e2e2e] bg-[#1a1a1a] hover:border-[#f97316]/40'}`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selected.has('adhoc') ? 'border-[#f97316] bg-[#f97316]' : 'border-[#3f3f3f]'}`}>
+                {selected.has('adhoc') && <Check size={10} className="text-black" />}
+              </div>
+              <Dumbbell size={13} className="text-[#f97316] flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-medium ${selected.has('adhoc') ? 'text-white' : 'text-[#a3a3a3]'}`}>Treino ad-hoc</p>
+                <p className="text-[10px] text-[#525252]">Criar treino personalizado no dia</p>
+              </div>
+            </div>
+          </button>
+        </div>
+
         {plans.length === 0 && (
-          <p className="text-center text-[#525252] text-sm py-8">Sem planos. Cria um no separador Planos.</p>
+          <p className="text-center text-[#525252] text-sm py-4">Sem planos. Cria um no separador Planos.</p>
         )}
 
         {byPlan.map(({ plan, sessions }) => (
@@ -233,12 +251,15 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
         {weekDates.map(date => {
           const isToday = date === today
           const sessionIds = getDaySessionIds(date, assignments, plans, weekStartDay)
+          const hasAdHoc = sessionIds.includes('adhoc')
           const daySessions = sessionIds
+            .filter(id => id !== 'adhoc')
             .map(id => findSession(plans, id))
             .filter(Boolean) as { plan: WorkoutPlan; session: WorkoutSession }[]
           const doneSessionIds = new Set(logs.filter(l => l.date === date).map(l => l.session_id))
           const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short' })
           const hasOverride = assignment?.day_overrides.some(o => o.date === date) ?? false
+          const totalCount = daySessions.length + (hasAdHoc ? 1 : 0)
 
           return (
             <div key={date} className={`rounded-2xl overflow-hidden ${isToday ? 'ring-1 ring-[#f97316]' : ''}`}>
@@ -249,14 +270,14 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
                   <p className={`text-sm font-semibold capitalize truncate ${isToday ? 'text-[#f97316]' : 'text-white'}`}>{dateLabel}</p>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <p className="text-xs text-[#737373]">{daySessions.length === 0 ? 'Descanso' : `${daySessions.length} sessão(ões)`}</p>
+                  <p className="text-xs text-[#737373]">{totalCount === 0 ? 'Descanso' : `${totalCount} sessão(ões)`}</p>
                   <button onClick={() => setEditingDate(date)} className="p-1.5 text-[#525252] hover:text-[#f97316]">
                     <Pencil size={13} />
                   </button>
                 </div>
               </div>
 
-              {daySessions.length > 0 ? (
+              {(daySessions.length > 0 || hasAdHoc) ? (
                 <div className="bg-[#131313] px-3 pb-2 pt-1 space-y-0.5">
                   {daySessions.map(({ plan: sessionPlan, session: s }) => {
                     const done = doneSessionIds.has(s.id)
@@ -270,6 +291,12 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
                       </button>
                     )
                   })}
+                  {hasAdHoc && (
+                    <div className="flex items-center gap-2 py-1.5">
+                      <Play size={11} className="text-[#f97316] flex-shrink-0" fill="currentColor" />
+                      <p className="text-xs text-[#a3a3a3] flex-1 italic">Treino livre</p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="bg-[#131313] px-4 py-2">
