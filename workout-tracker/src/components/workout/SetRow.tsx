@@ -24,18 +24,16 @@ export default function SetRow({ set: s, index: i, restSeconds, onUpdateSet, onC
         step="0.5"
         value={s.weight_kg ?? ''}
         onChange={e => onUpdateSet(i, 'weight_kg', parseFloat(e.target.value) || 0)}
-        disabled={s.completed}
         placeholder="—"
-        className="w-full bg-[#0f0f0f] rounded-lg px-2 py-2 text-sm text-white text-center disabled:opacity-40 border border-[#2e2e2e] focus:border-[#f97316] focus:outline-none"
+        className="w-full bg-[#0f0f0f] rounded-lg px-2 py-2 text-sm text-white text-center border border-[#2e2e2e] focus:border-[#f97316] focus:outline-none"
       />
       <input
         type="number"
         min="0"
         value={s.reps_done ?? ''}
         onChange={e => onUpdateSet(i, 'reps_done', parseInt(e.target.value) || 0)}
-        disabled={s.completed}
         placeholder={s.reps_target}
-        className="w-full bg-[#0f0f0f] rounded-lg px-2 py-2 text-sm text-white text-center disabled:opacity-40 border border-[#2e2e2e] focus:border-[#f97316] focus:outline-none"
+        className="w-full bg-[#0f0f0f] rounded-lg px-2 py-2 text-sm text-white text-center border border-[#2e2e2e] focus:border-[#f97316] focus:outline-none"
       />
       <button
         onClick={() => s.completed ? onUncompleteSet(i) : onCompleteSet(i, restSeconds)}

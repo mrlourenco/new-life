@@ -5,7 +5,7 @@ interface Props {
   total: number
   progress: number
   onSkip: () => void
-  onStop: () => void
+  onCancel: () => void
 }
 
 function formatTime(s: number) {
@@ -14,7 +14,7 @@ function formatTime(s: number) {
   return `${m}:${sec.toString().padStart(2, '0')}`
 }
 
-export default function RestTimerOverlay({ seconds, total, progress, onSkip, onStop }: Props) {
+export default function RestTimerOverlay({ seconds, total, progress, onSkip, onCancel }: Props) {
   const radius = 54
   const circ = 2 * Math.PI * radius
   const dash = circ * (1 - progress)
@@ -45,11 +45,11 @@ export default function RestTimerOverlay({ seconds, total, progress, onSkip, onS
 
         <div className="flex gap-4 mt-2">
           <button
-            onClick={onStop}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1a1a1a] border border-[#2e2e2e] text-[#a3a3a3] text-sm hover:border-[#f97316]/50 transition-colors"
+            onClick={onCancel}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1a1a1a] border border-[#2e2e2e] text-[#a3a3a3] text-sm hover:border-red-500/50 transition-colors"
           >
             <X size={16} />
-            Cancelar
+            Anular série
           </button>
           <button
             onClick={onSkip}
