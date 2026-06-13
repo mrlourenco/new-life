@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { WorkoutPlan, WorkoutLog, ActiveWorkout, SetLog } from '../types/workout'
+import { STORAGE_KEYS, loadJSON, saveJSON, removeJSON, stamp } from '../utils/storage'
 
 export interface ExerciseHistory {
   date: string
@@ -21,32 +22,13 @@ export function useExerciseHistory(logs: WorkoutLog[]) {
   }, [logs])
 }
 
-const KEYS = {
-  plans: 'wt_plans',
-  logs: 'wt_logs',
-  active: 'wt_active',
-}
-
-function load<T>(key: string): T | null {
-  try {
-    const raw = localStorage.getItem(key)
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
-  }
-}
-
-function save(key: string, value: unknown) {
-  localStorage.setItem(key, JSON.stringify(value))
-}
-
 export function usePlans() {
-  const [plans, setPlans] = useState<WorkoutPlan[]>(() => load<WorkoutPlan[]>(KEYS.plans) ?? [])
+  const [plans, setPlans] = useState<WorkoutPlan[]>(() => loadJSON<WorkoutPlan[]>(STORAGE_KEYS.workoutPlans) ?? [])
 
   const addPlan = useCallback((plan: WorkoutPlan) => {
     setPlans(prev => {
-      const updated = [...prev.filter(p => p.id !== plan.id), plan]
-      save(KEYS.plans, updated)
+      const updated = [...prev.filter(p => p.id !== plan.id), stamp(plan)]
+      saveJSON(STORAGE_KEYS.workoutPlans, updated)
       return updated
     })
   }, [])
@@ -54,7 +36,7 @@ export function usePlans() {
   const deletePlan = useCallback((id: string) => {
     setPlans(prev => {
       const updated = prev.filter(p => p.id !== id)
-      save(KEYS.plans, updated)
+      saveJSON(STORAGE_KEYS.workoutPlans, updated)
       return updated
     })
   }, [])
@@ -63,12 +45,12 @@ export function usePlans() {
 }
 
 export function useLogs() {
-  const [logs, setLogs] = useState<WorkoutLog[]>(() => load<WorkoutLog[]>(KEYS.logs) ?? [])
+  const [logs, setLogs] = useState<WorkoutLog[]>(() => loadJSON<WorkoutLog[]>(STORAGE_KEYS.workoutLogs) ?? [])
 
   const addLog = useCallback((log: WorkoutLog) => {
     setLogs(prev => {
-      const updated = [log, ...prev]
-      save(KEYS.logs, updated)
+      const updated = [stamp(log), ...prev]
+      saveJSON(STORAGE_KEYS.workoutLogs, updated)
       return updated
     })
   }, [])
@@ -76,7 +58,7 @@ export function useLogs() {
   const deleteLog = useCallback((id: string) => {
     setLogs(prev => {
       const updated = prev.filter(l => l.id !== id)
-      save(KEYS.logs, updated)
+      saveJSON(STORAGE_KEYS.workoutLogs, updated)
       return updated
     })
   }, [])
@@ -85,26 +67,26 @@ export function useLogs() {
 }
 
 export function useActiveWorkout() {
-  const [active, setActive] = useState<ActiveWorkout | null>(() => load<ActiveWorkout>(KEYS.active))
+  const [active, setActive] = useState<ActiveWorkout | null>(() => loadJSON<ActiveWorkout>(STORAGE_KEYS.activeWorkout))
 
   const startWorkout = useCallback((workout: ActiveWorkout) => {
     setActive(workout)
-    save(KEYS.active, workout)
+    saveJSON(STORAGE_KEYS.activeWorkout, workout)
   }, [])
 
   const updateActive = useCallback((workout: ActiveWorkout) => {
     setActive(workout)
-    save(KEYS.active, workout)
+    saveJSON(STORAGE_KEYS.activeWorkout, workout)
   }, [])
 
   const clearActive = useCallback(() => {
     setActive(null)
-    localStorage.removeItem(KEYS.active)
+    removeJSON(STORAGE_KEYS.activeWorkout)
   }, [])
 
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === KEYS.active) {
+      if (e.key === STORAGE_KEYS.activeWorkout) {
         setActive(e.newValue ? JSON.parse(e.newValue) : null)
       }
     }

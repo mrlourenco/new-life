@@ -1,3 +1,5 @@
+import type { Timestamped } from './common'
+
 export interface FoodItem {
   name: string
   quantity: string
@@ -28,7 +30,7 @@ export const MEAL_CATEGORIES: { id: MealCategory; label: string; defaultTime: st
 ]
 
 // Reusable meal template (library)
-export interface MealTemplate {
+export interface MealTemplate extends Timestamped {
   id: string
   name: string
   type?: 'food' | 'recipe'   // 'food' = single item, 'recipe' = composed meal; defaults to 'recipe'
@@ -48,7 +50,7 @@ export interface MealEntry {
 }
 
 // Daily nutrition log
-export interface DayNutritionLog {
+export interface DayNutritionLog extends Timestamped {
   id: string
   date: string           // 'YYYY-MM-DD'
   entries: MealEntry[]
@@ -61,7 +63,7 @@ export interface PlanDay {
   template_ids: string[]
 }
 
-export interface NutritionPlan {
+export interface NutritionPlan extends Timestamped {
   id: string
   name: string
   description?: string
@@ -78,7 +80,7 @@ export interface DayOverride {
 }
 
 // Associates a specific week with a plan (and optional per-day overrides)
-export interface WeekAssignment {
+export interface WeekAssignment extends Timestamped {
   id: string
   week_start: string     // 'YYYY-MM-DD' — first day of the week (Mon or Sun)
   plan_id?: string       // undefined = no plan for this week

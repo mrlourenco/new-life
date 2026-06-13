@@ -3,6 +3,7 @@ import { Trash2, Scale, Target } from 'lucide-react'
 import type { MacroTargets, WeightEntry } from '../types/profile'
 import type { DayNutritionLog, NutritionPlan } from '../types/nutrition'
 import NutritionEvolutionPage from './nutrition/NutritionEvolutionPage'
+import BackupSection from '../components/BackupSection'
 
 type ProfileTab = 'perfil' | 'evolucao'
 
@@ -255,6 +256,8 @@ export default function ProfilePage({
               </div>
             )}
           </div>
+
+          <BackupSection />
         </div>
       )}
     </div>
