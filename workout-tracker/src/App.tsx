@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { usePlans, useLogs, useActiveWorkout, useExerciseHistory } from './hooks/useStore'
 import { useMealTemplates, useNutritionLogs, useNutritionPlans } from './hooks/useNutritionStore'
 import { useWeekAssignments } from './hooks/useWeekAssignments'
+import { useWorkoutWeekAssignments } from './hooks/useWorkoutWeek'
 import { useProfileStore } from './hooks/useProfileStore'
 import { useToday } from './hooks/useToday'
 import { localISODate } from './utils/dates'
@@ -20,8 +21,9 @@ export default function App() {
 
   // Workout
   const { plans, addPlan, deletePlan } = usePlans()
-  const { logs, addLog, deleteLog } = useLogs()
+  const { logs, addLog, updateLog, deleteLog } = useLogs()
   const { active, startWorkout, updateActive, clearActive } = useActiveWorkout()
+  const { assignments: workoutAssignments, assignPlanToWeek: assignWorkoutPlan, saveDayOverride: saveWorkoutDayOverride } = useWorkoutWeekAssignments()
   const exerciseHistory = useExerciseHistory(logs)
 
   // Nutrition
@@ -96,14 +98,20 @@ export default function App() {
           <WorkoutPage
             tab={workoutTab}
             onTabChange={setWorkoutTab}
+            today={today}
+            weekStartDay={profile.week_start_day}
             plans={plans}
             active={active}
             logs={logs}
+            assignments={workoutAssignments}
             onStart={handleStart}
             onResume={() => setShowActive(true)}
             onAddPlan={addPlan}
             onDeletePlan={deletePlan}
+            onUpdateLog={updateLog}
             onDeleteLog={deleteLog}
+            onAssignPlan={assignWorkoutPlan}
+            onSaveDayOverride={saveWorkoutDayOverride}
           />
         )}
         {tab === 'nutrition' && (

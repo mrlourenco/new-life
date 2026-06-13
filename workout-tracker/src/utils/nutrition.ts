@@ -1,5 +1,8 @@
 import type { MealTemplate, MealEntry, DayNutritionLog, DayMacros, NutritionPlan, WeekAssignment } from '../types/nutrition'
-import { localISODate } from './dates'
+import { getWeekDates } from './dates'
+
+// Date helpers live in ./dates now; re-exported here for existing imports.
+export { getWeekDates, getMonthDates, dowShort, dowLabel } from './dates'
 
 export function sumFoods(foods: { calories: number; protein_g?: number; carbs_g?: number; fat_g?: number; fiber_g?: number }[]): DayMacros {
   let calories = 0, protein_g = 0, carbs_g = 0, fat_g = 0, fiber_g = 0
@@ -36,18 +39,6 @@ export function getSuggestedTemplateIds(plan: NutritionPlan | null, date: string
   if (!plan) return []
   const dow = new Date(date + 'T12:00:00').getDay()
   return plan.days.find(d => d.day_of_week === dow)?.template_ids ?? []
-}
-
-export function getWeekDates(from: string, startDay: 0 | 1 = 1): string[] {
-  const d = new Date(from + 'T12:00:00')
-  const offset = startDay === 1 ? (d.getDay() + 6) % 7 : d.getDay()
-  const start = new Date(d)
-  start.setDate(d.getDate() - offset)
-  return Array.from({ length: 7 }, (_, i) => {
-    const dd = new Date(start)
-    dd.setDate(start.getDate() + i)
-    return localISODate(dd)
-  })
 }
 
 export function getDayTemplateIds(
@@ -109,13 +100,6 @@ export function generateShoppingItems(plan: NutritionPlan, templates: MealTempla
   return generateShoppingItemsFromDayMap(items, templates, weekDates[0])
 }
 
-export function getMonthDates(year: number, month: number): string[] {
-  const days = new Date(year, month + 1, 0).getDate()
-  return Array.from({ length: days }, (_, i) =>
-    localISODate(new Date(year, month, i + 1))
-  )
-}
-
 export function exportNutritionData(templates: MealTemplate[], plans: NutritionPlan[], logs: DayNutritionLog[]) {
   const data = { exported_at: new Date().toISOString(), version: 2, templates, plans, logs }
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -133,8 +117,3 @@ export const GOAL_PT: Record<string, string> = {
   maintenance: 'Manutenção',
   general: 'Geral',
 }
-
-const DAYS_PT = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
-const DAYS_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-export function dowLabel(dow: number) { return DAYS_PT[dow] ?? '' }
-export function dowShort(dow: number) { return DAYS_SHORT[dow] ?? '' }

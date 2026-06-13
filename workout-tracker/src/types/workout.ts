@@ -63,3 +63,17 @@ export interface ActiveWorkout {
   session: WorkoutSession
   current_exercise_index: number
 }
+
+// Per-date override of a week's scheduled sessions
+export interface WorkoutDayOverride {
+  date: string            // 'YYYY-MM-DD'
+  session_ids: string[]
+}
+
+// Associates a specific week with a plan (and optional per-day overrides)
+export interface WorkoutWeekAssignment extends Timestamped {
+  id: string
+  week_start: string      // 'YYYY-MM-DD' — first day of the week (Mon or Sun)
+  plan_id?: string        // undefined = no plan for this week
+  day_overrides: WorkoutDayOverride[]
+}
