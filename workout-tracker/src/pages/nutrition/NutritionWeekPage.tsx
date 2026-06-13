@@ -10,6 +10,8 @@ import {
 } from '../../utils/nutrition'
 import { useShoppingStore } from '../../hooks/useShoppingStore'
 import ShoppingListOverlay from '../../components/nutrition/ShoppingListOverlay'
+import FoodTemplateEditor from '../../components/nutrition/FoodTemplateEditor'
+import MealTemplateEditor from '../../components/nutrition/MealTemplateEditor'
 
 interface Props {
   today: string
@@ -19,6 +21,7 @@ interface Props {
   assignments: WeekAssignment[]
   onAssignPlan: (weekStart: string, planId: string | null) => void
   onSaveDayOverride: (weekStart: string, date: string, templateIds: string[]) => void
+  onSaveTemplate: (t: MealTemplate) => void
 }
 
 function PlanPicker({ plans, currentPlanId, onSelect, onClose }: {
@@ -61,22 +64,38 @@ function PlanPicker({ plans, currentPlanId, onSelect, onClose }: {
   )
 }
 
-function DayOverrideEditor({ date, currentTemplateIds, hasOverride, templates, onSave, onClearOverride, onClose }: {
+function DayOverrideEditor({ date, currentTemplateIds, hasOverride, templates, onSave, onClearOverride, onSaveTemplate, onClose }: {
   date: string
   currentTemplateIds: string[]
   hasOverride: boolean
   templates: MealTemplate[]
   onSave: (templateIds: string[]) => void
   onClearOverride: () => void
+  onSaveTemplate: (t: MealTemplate) => void
   onClose: () => void
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set(currentTemplateIds))
+  const [creating, setCreating] = useState<'food' | 'recipe' | null>(null)
 
   const toggle = (id: string) => setSelected(prev => {
     const next = new Set(prev)
     if (next.has(id)) next.delete(id); else next.add(id)
     return next
   })
+
+  // Create a new library meal and select it for this day in one step
+  const handleCreated = (t: MealTemplate) => {
+    onSaveTemplate(t)
+    setSelected(prev => new Set(prev).add(t.id))
+    setCreating(null)
+  }
+
+  if (creating === 'food') {
+    return <FoodTemplateEditor onSave={handleCreated} onCancel={() => setCreating(null)} />
+  }
+  if (creating === 'recipe') {
+    return <MealTemplateEditor onSave={handleCreated} onCancel={() => setCreating(null)} />
+  }
 
   const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
   const byCategory = MEAL_CATEGORIES
@@ -109,8 +128,20 @@ function DayOverrideEditor({ date, currentTemplateIds, hasOverride, templates, o
           <p className="text-xs text-[#737373]">{selected.size} refeição(ões) selecionada(s)</p>
         )}
 
+        {/* Manual entry: create a new meal and add it straight to this day */}
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={() => setCreating('food')}
+            className="flex items-center justify-center gap-1.5 py-3 bg-[#1a1a1a] rounded-xl text-[#22c55e] text-xs font-semibold border border-[#22c55e]/30 hover:border-[#22c55e]/60">
+            <Apple size={13} />Novo alimento
+          </button>
+          <button onClick={() => setCreating('recipe')}
+            className="flex items-center justify-center gap-1.5 py-3 bg-[#1a1a1a] rounded-xl text-[#60a5fa] text-xs font-semibold border border-[#60a5fa]/30 hover:border-[#60a5fa]/60">
+            <UtensilsCrossed size={13} />Nova receita
+          </button>
+        </div>
+
         {templates.length === 0 && (
-          <p className="text-center text-[#525252] text-sm py-8">Sem refeições na biblioteca. Cria refeições no separador Refeições.</p>
+          <p className="text-center text-[#525252] text-sm py-8">Sem refeições na biblioteca. Cria uma acima ou no separador Refeições.</p>
         )}
 
         {byCategory.map(({ cat, items }) => (
@@ -146,7 +177,7 @@ function DayOverrideEditor({ date, currentTemplateIds, hasOverride, templates, o
   )
 }
 
-export default function NutritionWeekPage({ today, plans, templates, weekStartDay, assignments, onAssignPlan, onSaveDayOverride }: Props) {
+export default function NutritionWeekPage({ today, plans, templates, weekStartDay, assignments, onAssignPlan, onSaveDayOverride, onSaveTemplate }: Props) {
   const [showShopping, setShowShopping] = useState(false)
   const [weekOffset, setWeekOffset] = useState(0)
   const [showPlanPicker, setShowPlanPicker] = useState(false)
@@ -229,6 +260,7 @@ export default function NutritionWeekPage({ today, plans, templates, weekStartDa
         templates={templates}
         onSave={handleSaveDayOverride}
         onClearOverride={handleClearDayOverride}
+        onSaveTemplate={onSaveTemplate}
         onClose={() => setEditingDate(null)}
       />
     )

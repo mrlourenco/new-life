@@ -68,6 +68,7 @@ export default function NutritionPage({
             assignments={assignments}
             onAssignPlan={onAssignPlan}
             onSaveDayOverride={onSaveDayOverride}
+            onSaveTemplate={onSaveTemplate}
           />
         )}
         {tab === 'library' && (
