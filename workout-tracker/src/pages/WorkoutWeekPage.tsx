@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, X, Pencil, Check, Calendar, Dumbbell, CheckCircle2, Play } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Pencil, Check, Calendar, Dumbbell, CheckCircle2, Play, Plus } from 'lucide-react'
 import type { WorkoutPlan, WorkoutSession, WorkoutLog, WorkoutWeekAssignment } from '../types/workout'
 import { getWeekDates } from '../utils/dates'
 import { getDaySessionIds, findSession } from '../utils/workout'
 import { muscleLabel } from '../utils/labels'
 import SessionDetail from '../components/workout/SessionDetail'
+import AdHocWorkoutBuilder from '../components/AdHocWorkoutBuilder'
 
 interface Props {
   today: string
@@ -55,7 +56,7 @@ function PlanPicker({ plans, currentPlanId, onSelect, onClose }: {
   )
 }
 
-function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave, onClearOverride, onClose }: {
+function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave, onClearOverride, onClose, onUpdatePlan }: {
   date: string
   currentSessionIds: string[]
   hasOverride: boolean
@@ -63,8 +64,11 @@ function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave,
   onSave: (sessionIds: string[]) => void
   onClearOverride: () => void
   onClose: () => void
+  onUpdatePlan: (plan: WorkoutPlan) => void
 }) {
-  const [selected, setSelected] = useState<Set<string>>(new Set(currentSessionIds))
+  // Filter out the 'adhoc' placeholder; configured ad-hoc sessions have real UUIDs
+  const [selected, setSelected] = useState<Set<string>>(new Set(currentSessionIds.filter(id => id !== 'adhoc')))
+  const [showBuilder, setShowBuilder] = useState(false)
 
   const toggle = (id: string) => setSelected(prev => {
     const next = new Set(prev)
@@ -72,8 +76,32 @@ function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave,
     return next
   })
 
+  const handleBuilderSave = (_plan: WorkoutPlan, session: WorkoutSession) => {
+    const existingAdhoc = plans.find(p => p.id === 'adhoc')
+    onUpdatePlan({
+      id: 'adhoc',
+      name: 'Avulso',
+      goal: 'general',
+      days_per_week: 0,
+      sessions: [...(existingAdhoc?.sessions ?? []), session],
+    })
+    setSelected(prev => new Set([...prev, session.id]))
+    setShowBuilder(false)
+  }
+
+  if (showBuilder) {
+    return (
+      <AdHocWorkoutBuilder
+        onSave={handleBuilderSave}
+        onClose={() => setShowBuilder(false)}
+      />
+    )
+  }
+
   const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
-  const byPlan = plans.map(plan => ({ plan, sessions: plan.sessions })).filter(g => g.sessions.length > 0)
+  const adhocPlan = plans.find(p => p.id === 'adhoc')
+  const adhocSessions = adhocPlan?.sessions ?? []
+  const byPlan = plans.filter(p => p.id !== 'adhoc').map(plan => ({ plan, sessions: plan.sessions })).filter(g => g.sessions.length > 0)
 
   return (
     <div className="fixed inset-0 z-50 bg-[#0f0f0f] flex flex-col">
@@ -101,26 +129,38 @@ function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave,
           <p className="text-xs text-[#737373]">{selected.size} sessão(ões) selecionada(s)</p>
         )}
 
-        {/* Ad-hoc option */}
-        <div>
-          <p className="text-[11px] text-[#525252] font-semibold uppercase tracking-wider mb-2">Treino livre</p>
-          <button onClick={() => toggle('adhoc')}
-            className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${selected.has('adhoc') ? 'border-[#f97316] bg-[#f97316]/10' : 'border-dashed border-[#2e2e2e] bg-[#1a1a1a] hover:border-[#f97316]/40'}`}>
-            <div className="flex items-center gap-3">
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selected.has('adhoc') ? 'border-[#f97316] bg-[#f97316]' : 'border-[#3f3f3f]'}`}>
-                {selected.has('adhoc') && <Check size={10} className="text-black" />}
-              </div>
-              <Dumbbell size={13} className="text-[#f97316] flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${selected.has('adhoc') ? 'text-white' : 'text-[#a3a3a3]'}`}>Treino ad-hoc</p>
-                <p className="text-[10px] text-[#525252]">Criar treino personalizado no dia</p>
-              </div>
-            </div>
+        {/* Ad-hoc section */}
+        <div className="space-y-2">
+          <p className="text-[11px] text-[#525252] font-semibold uppercase tracking-wider">Treino livre</p>
+
+          {adhocSessions.map(s => {
+            const isSelected = selected.has(s.id)
+            return (
+              <button key={s.id} onClick={() => toggle(s.id)}
+                className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${isSelected ? 'border-[#f97316] bg-[#f97316]/10' : 'border-[#2e2e2e] bg-[#1a1a1a] hover:border-[#3f3f3f]'}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-[#f97316] bg-[#f97316]' : 'border-[#3f3f3f]'}`}>
+                    {isSelected && <Check size={10} className="text-black" />}
+                  </div>
+                  <Dumbbell size={13} className="text-[#f97316] flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${isSelected ? 'text-white' : 'text-[#a3a3a3]'}`}>{s.name}</p>
+                    <p className="text-[10px] text-[#525252]">{s.exercises.length} exercícios{s.muscle_groups.length > 0 ? ` · ${s.muscle_groups.map(muscleLabel).join(', ')}` : ''}</p>
+                  </div>
+                </div>
+              </button>
+            )
+          })}
+
+          <button onClick={() => setShowBuilder(true)}
+            className="w-full flex items-center gap-3 px-4 py-3 border border-dashed border-[#2e2e2e] bg-[#1a1a1a] rounded-xl hover:border-[#f97316]/40 transition-colors">
+            <Plus size={14} className="text-[#f97316] flex-shrink-0" />
+            <p className="text-sm text-[#a3a3a3]">Criar treino livre</p>
           </button>
         </div>
 
-        {plans.length === 0 && (
-          <p className="text-center text-[#525252] text-sm py-4">Sem planos. Cria um no separador Planos.</p>
+        {byPlan.length === 0 && adhocSessions.length === 0 && (
+          <p className="text-center text-[#525252] text-sm py-2">Sem planos. Cria um no separador Planos.</p>
         )}
 
         {byPlan.map(({ plan, sessions }) => (
@@ -210,6 +250,7 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
         onSave={handleSaveDayOverride}
         onClearOverride={handleClearDayOverride}
         onClose={() => setEditingDate(null)}
+        onUpdatePlan={onUpdatePlan}
       />
     )
   }

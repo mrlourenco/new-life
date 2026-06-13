@@ -4,6 +4,7 @@ import type { WorkoutPlan, WorkoutSession, ActiveWorkout, WorkoutLog, WorkoutWee
 import { muscleLabel } from '../utils/labels'
 import { formatDurationSeconds } from '../utils/format'
 import { getDaySessionIds, findSession } from '../utils/workout'
+import { getWeekDates } from '../utils/dates'
 import WorkoutLogEditor from '../components/workout/WorkoutLogEditor'
 import SessionDetail from '../components/workout/SessionDetail'
 import AdHocWorkoutBuilder from '../components/AdHocWorkoutBuilder'
@@ -22,9 +23,9 @@ interface Props {
   onUpdateLog: (log: WorkoutLog) => void
   onDeleteLog: (id: string) => void
   onUpdatePlan: (plan: WorkoutPlan) => void
+  onSaveDayOverride: (weekStart: string, date: string, sessionIds: string[]) => void
 }
 
-// Sheet to pick how to add a workout: ad-hoc or pick an existing session
 function AddWorkoutSheet({ plans, onAdHoc, onStart, onClose }: {
   plans: WorkoutPlan[]
   onAdHoc: () => void
@@ -42,13 +43,12 @@ function AddWorkoutSheet({ plans, onAdHoc, onStart, onClose }: {
         </div>
 
         <div className="overflow-y-auto px-4 pt-4 pb-8 space-y-4">
-          {/* Ad-hoc option */}
           <button onClick={onAdHoc}
             className="w-full flex items-center gap-3 px-4 py-3.5 bg-[#f97316]/10 border border-[#f97316]/40 rounded-2xl hover:border-[#f97316]/70 transition-colors">
             <Dumbbell size={18} className="text-[#f97316] flex-shrink-0" />
             <div className="text-left">
               <p className="text-white text-sm font-semibold">Treino livre (ad-hoc)</p>
-              <p className="text-[#737373] text-xs mt-0.5">Cria um treino personalizado agora</p>
+              <p className="text-[#737373] text-xs mt-0.5">Cria um treino personalizado</p>
             </div>
           </button>
 
@@ -76,7 +76,10 @@ function AddWorkoutSheet({ plans, onAdHoc, onStart, onClose }: {
   )
 }
 
-export default function TodayPage({ today, plans, active, logs, assignments, weekStartDay, onStart, onResume, onUpdateLog, onDeleteLog, onUpdatePlan }: Props) {
+export default function TodayPage({
+  today, plans, active, logs, assignments, weekStartDay,
+  onStart, onResume, onUpdateLog, onDeleteLog, onUpdatePlan, onSaveDayOverride,
+}: Props) {
   const [editingLog, setEditingLog] = useState<WorkoutLog | null>(null)
   const [viewing, setViewing] = useState<{ plan: WorkoutPlan; session: WorkoutSession } | null>(null)
   const [showBuilder, setShowBuilder] = useState(false)
@@ -92,10 +95,26 @@ export default function TodayPage({ today, plans, active, logs, assignments, wee
     .map(id => findSession(plans, id))
     .filter(Boolean) as { plan: WorkoutPlan; session: WorkoutSession }[]
 
+  const handleBuilderSave = (_plan: WorkoutPlan, session: WorkoutSession) => {
+    const existingAdhoc = plans.find(p => p.id === ADHOC_ID)
+    onUpdatePlan({
+      id: ADHOC_ID,
+      name: 'Avulso',
+      goal: 'general',
+      days_per_week: 0,
+      sessions: [...(existingAdhoc?.sessions ?? []), session],
+    })
+    const weekStart = getWeekDates(today, weekStartDay)[0]
+    const existingIds = sessionIds.filter(id => id !== ADHOC_ID)
+    onSaveDayOverride(weekStart, today, [...existingIds, session.id])
+    setShowBuilder(false)
+  }
+
   if (showBuilder) {
     return (
       <AdHocWorkoutBuilder
         onStart={(plan, session) => { onStart(plan, session); setShowBuilder(false) }}
+        onSave={handleBuilderSave}
         onClose={() => setShowBuilder(false)}
       />
     )
@@ -131,7 +150,6 @@ export default function TodayPage({ today, plans, active, logs, assignments, wee
         <p className="text-[#737373] text-sm mt-0.5 capitalize">{dateLabel}</p>
       </div>
 
-      {/* In-progress workout */}
       {active && (
         <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-[#f97316]/30 mb-6">
           <div className="flex items-center gap-2 mb-3">
@@ -150,7 +168,6 @@ export default function TodayPage({ today, plans, active, logs, assignments, wee
         </div>
       )}
 
-      {/* Workouts logged today */}
       {todayLogs.length > 0 && (
         <div className="mb-6">
           <p className="text-xs text-[#737373] uppercase tracking-wider font-semibold mb-3">Registado hoje</p>
@@ -188,7 +205,6 @@ export default function TodayPage({ today, plans, active, logs, assignments, wee
         </div>
       )}
 
-      {/* Planned sessions for today */}
       {(scheduled.length > 0 || hasAdHoc) ? (
         <div className="mb-6">
           <p className="text-xs text-[#737373] uppercase tracking-wider font-semibold mb-3">Planeado para hoje</p>
@@ -198,7 +214,7 @@ export default function TodayPage({ today, plans, active, logs, assignments, wee
                 <button onClick={() => setViewing({ plan, session })} className="w-full text-left mb-3">
                   <p className="text-white font-semibold">{session.name}</p>
                   <p className="text-[#737373] text-xs mt-0.5">
-                    {plan.name} · {session.exercises.length} exercícios
+                    {session.exercises.length} exercícios
                     {session.muscle_groups.length > 0 && ` · ${session.muscle_groups.map(muscleLabel).join(', ')}`}
                   </p>
                 </button>
@@ -230,7 +246,6 @@ export default function TodayPage({ today, plans, active, logs, assignments, wee
         </div>
       )}
 
-      {/* Add workout button */}
       <button
         onClick={() => setShowAdder(true)}
         className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#1a1a1a] border border-[#2e2e2e] rounded-2xl text-[#a3a3a3] text-sm font-medium hover:border-[#f97316]/40 hover:text-[#f97316] transition-colors"
