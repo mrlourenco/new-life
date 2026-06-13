@@ -6,14 +6,15 @@ import { searchFoods, calcMacros, type FoodEntry } from '../../data/foods'
 interface Props {
   onAdd: (food: FoodItem) => void
   onClose: () => void
+  initialMode?: Mode
 }
 
 type Mode = 'search' | 'portion' | 'manual'
 
 const EMPTY_MANUAL: FoodItem = { name: '', quantity: '', calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0 }
 
-export default function FoodPicker({ onAdd, onClose }: Props) {
-  const [mode, setMode] = useState<Mode>('search')
+export default function FoodPicker({ onAdd, onClose, initialMode = 'search' }: Props) {
+  const [mode, setMode] = useState<Mode>(initialMode)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<FoodEntry | null>(null)
   const [grams, setGrams] = useState('')
@@ -195,7 +196,10 @@ export default function FoodPicker({ onAdd, onClose }: Props) {
       {/* Mode: Manual entry */}
       {mode === 'manual' && (
         <div className="flex flex-col flex-1 overflow-y-auto px-4 pt-4 pb-6 gap-3">
-          <p className="text-xs text-[#737373]">Preenche os valores nutricionais manualmente.</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-[#737373]">Preenche os valores nutricionais manualmente.</p>
+            <button onClick={() => setMode('search')} className="text-xs text-[#22c55e] font-medium flex-shrink-0">Pesquisar →</button>
+          </div>
 
           {[
             { field: 'name', label: 'Nome do alimento *', type: 'text', placeholder: 'ex: Arroz basmati' },

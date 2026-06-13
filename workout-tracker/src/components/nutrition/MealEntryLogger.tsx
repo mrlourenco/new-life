@@ -93,6 +93,7 @@ export default function MealEntryLogger({ today, templates, logs, suggestedIds, 
   if (showFoodPickerForFood) {
     return (
       <FoodPicker
+        initialMode="manual"
         onAdd={f => { setFoodItem(f); setFoodCategory('outro'); setShowFoodPickerForFood(false) }}
         onClose={() => { setShowFoodPickerForFood(false); if (!foodItem) setView('list') }}
       />

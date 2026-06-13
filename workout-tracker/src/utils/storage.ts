@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
   workoutPlans: 'wt_plans',
   workoutLogs: 'wt_logs',
   activeWorkout: 'wt_active',
+  workoutWeekAssignments: 'wt_week_assignments_v1',
   mealTemplates: 'nt2_templates',
   nutritionLogs: 'nt2_logs',
   nutritionPlans: 'nt2_plans',

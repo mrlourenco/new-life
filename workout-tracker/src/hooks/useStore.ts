@@ -55,6 +55,14 @@ export function useLogs() {
     })
   }, [])
 
+  const updateLog = useCallback((log: WorkoutLog) => {
+    setLogs(prev => {
+      const updated = prev.map(l => l.id === log.id ? stamp(log) : l)
+      saveJSON(STORAGE_KEYS.workoutLogs, updated)
+      return updated
+    })
+  }, [])
+
   const deleteLog = useCallback((id: string) => {
     setLogs(prev => {
       const updated = prev.filter(l => l.id !== id)
@@ -63,7 +71,7 @@ export function useLogs() {
     })
   }, [])
 
-  return { logs, addLog, deleteLog }
+  return { logs, addLog, updateLog, deleteLog }
 }
 
 export function useActiveWorkout() {
