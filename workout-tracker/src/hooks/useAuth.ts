@@ -3,6 +3,8 @@ import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { initSync, pullAll, pushAll } from '../lib/sync'
 
+const redirectTo = window.location.origin + import.meta.env.BASE_URL
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -28,8 +30,10 @@ export function useAuth() {
       if (event === 'SIGNED_IN') {
         setSyncing(true)
         try {
-          await pushAll()
+          // Pull first so remote data wins over empty local defaults,
+          // then push any local-only entities the remote doesn't have yet.
           const changed = await pullAll()
+          await pushAll()
           if (changed) window.location.reload()
         } finally {
           setSyncing(false)
@@ -43,7 +47,7 @@ export function useAuth() {
   const signIn = async (email: string) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: redirectTo },
     })
     if (!error) setEmailSent(true)
     return { error }
@@ -52,7 +56,7 @@ export function useAuth() {
   const signInWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo },
     })
   }
 
@@ -65,8 +69,8 @@ export function useAuth() {
     if (!user) return
     setSyncing(true)
     try {
-      await pushAll()
       const changed = await pullAll()
+      await pushAll()
       if (changed) window.location.reload()
     } finally {
       setSyncing(false)

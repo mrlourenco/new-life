@@ -25,7 +25,7 @@ let initialized = false
 function newer(a?: string, b?: string): boolean {
   if (!b) return true
   if (!a) return false
-  return a > b
+  return new Date(a).getTime() > new Date(b).getTime()
 }
 
 function mergeEntities<T extends SyncEntity>(local: T[], remote: T[]): T[] {
@@ -42,23 +42,40 @@ async function handleSaveEvent(e: CustomEvent<{ key: string; value: unknown }>) 
   if (pulling) return
   const { key, value } = e.detail
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return
 
   const col = COLLECTIONS.find(c => c.key === key)
   if (col) {
     const entities = value as SyncEntity[]
-    if (!entities?.length) return
-    const rows = entities.map(ent => ({
-      id: ent.id,
-      user_id: user.id,
-      data: ent,
-      updated_at: ent.updated_at ?? new Date().toISOString(),
-      created_at: ent.created_at ?? new Date().toISOString(),
-    }))
-    supabase.from(col.table)
-      .upsert(rows, { onConflict: 'id,user_id' })
-      .then(({ error }) => { if (error) console.error(`sync push ${col.table}:`, error) })
+    const localIds = (entities ?? []).map(ent => ent.id)
+
+    if (localIds.length > 0) {
+      const rows = entities.map(ent => ({
+        id: ent.id,
+        user_id: user.id,
+        data: ent,
+        updated_at: ent.updated_at ?? new Date().toISOString(),
+        created_at: ent.created_at ?? new Date().toISOString(),
+      }))
+      supabase.from(col.table)
+        .upsert(rows, { onConflict: 'id,user_id' })
+        .then(({ error }) => { if (error) console.error(`sync push ${col.table}:`, error) })
+
+      // Delete remote rows no longer in local array
+      supabase.from(col.table)
+        .delete()
+        .eq('user_id', user.id)
+        .not('id', 'in', `(${localIds.join(',')})`)
+        .then(({ error }) => { if (error) console.error(`sync delete ${col.table}:`, error) })
+    } else {
+      // Array is empty — delete all remote rows for this collection
+      supabase.from(col.table)
+        .delete()
+        .eq('user_id', user.id)
+        .then(({ error }) => { if (error) console.error(`sync delete-all ${col.table}:`, error) })
+    }
     return
   }
 
@@ -78,7 +95,10 @@ export function initSync() {
 
 // Pull all remote data and merge into localStorage. Returns true if anything changed.
 export async function pullAll(): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser()
+  if (pulling) return false
+
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return false
 
   pulling = true
@@ -90,7 +110,8 @@ export async function pullAll(): Promise<boolean> {
         .select('id, data, updated_at')
         .eq('user_id', user.id)
 
-      if (error || !data) continue
+      if (error) { console.error(`sync pull ${table}:`, error); continue }
+      if (!data) continue
 
       const remote = data.map(row => ({ ...(row.data as SyncEntity), updated_at: row.updated_at }))
       const local = loadJSON<SyncEntity[]>(key) ?? []
@@ -103,12 +124,13 @@ export async function pullAll(): Promise<boolean> {
     }
 
     // Profile (single document)
-    const { data: profRow } = await supabase
+    const { data: profRow, error: profErr } = await supabase
       .from('profiles')
       .select('data, updated_at')
       .eq('user_id', user.id)
       .maybeSingle()
 
+    if (profErr) console.error('sync pull profiles:', profErr)
     if (profRow) {
       const remote = { ...(profRow.data as object), updated_at: profRow.updated_at }
       const local = loadJSON<{ updated_at?: string }>(STORAGE_KEYS.profile)
@@ -125,7 +147,8 @@ export async function pullAll(): Promise<boolean> {
 
 // Upload all local data to Supabase (used on first login).
 export async function pushAll(): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return
 
   for (const { key, table } of COLLECTIONS) {

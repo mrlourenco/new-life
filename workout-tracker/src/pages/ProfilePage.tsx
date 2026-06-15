@@ -73,12 +73,18 @@ export default function ProfilePage({
   const [weightNote, setWeightNote] = useState('')
   const [emailInput, setEmailInput] = useState('')
   const [signInError, setSignInError] = useState('')
+  const [isSigningIn, setIsSigningIn] = useState(false)
 
   const handleSignIn = async () => {
-    if (!emailInput.trim()) return
+    if (!emailInput.trim() || isSigningIn) return
     setSignInError('')
-    const { error } = await onSignIn(emailInput.trim())
-    if (error) setSignInError('Erro ao enviar o link. Verifica o email e tenta novamente.')
+    setIsSigningIn(true)
+    try {
+      const { error } = await onSignIn(emailInput.trim())
+      if (error) setSignInError('Erro ao enviar o link. Verifica o email e tenta novamente.')
+    } finally {
+      setIsSigningIn(false)
+    }
   }
 
   const update = (key: keyof MacroTargets, val: number) => {
@@ -346,9 +352,10 @@ export default function ProfilePage({
                 {signInError && <p className="text-xs text-red-400">{signInError}</p>}
                 <button
                   onClick={handleSignIn}
-                  disabled={!emailInput.trim()}
-                  className="w-full py-2.5 bg-[#22c55e] rounded-xl text-black text-sm font-semibold disabled:opacity-40"
+                  disabled={!emailInput.trim() || isSigningIn}
+                  className="w-full py-2.5 bg-[#22c55e] rounded-xl text-black text-sm font-semibold disabled:opacity-40 flex items-center justify-center gap-2"
                 >
+                  {isSigningIn && <RefreshCw size={14} className="animate-spin" />}
                   Enviar link de acesso
                 </button>
               </div>

@@ -1,7 +1,11 @@
 -- New Life — schema Fase 1
 -- Corre isto no SQL Editor do teu projecto Supabase.
+-- NOTA: se já correste uma versão anterior, faz DROP TABLE em cada tabela antes
+-- de recriar, ou usa os comandos ALTER TABLE em baixo para corrigir a PK.
 
 -- ── Tabelas de colecções (cada entidade = uma linha) ─────────────────────────
+-- A PK é (user_id, id) para que o índice composto possa ser usado eficientemente
+-- em queries que filtram por user_id.
 
 create table if not exists workout_plans (
   id          text        not null,
@@ -9,7 +13,7 @@ create table if not exists workout_plans (
   data        jsonb       not null,
   updated_at  timestamptz not null default now(),
   created_at  timestamptz not null default now(),
-  primary key (id, user_id)
+  primary key (user_id, id)
 );
 
 create table if not exists workout_logs (
@@ -18,7 +22,7 @@ create table if not exists workout_logs (
   data        jsonb       not null,
   updated_at  timestamptz not null default now(),
   created_at  timestamptz not null default now(),
-  primary key (id, user_id)
+  primary key (user_id, id)
 );
 
 create table if not exists workout_week_assignments (
@@ -27,7 +31,7 @@ create table if not exists workout_week_assignments (
   data        jsonb       not null,
   updated_at  timestamptz not null default now(),
   created_at  timestamptz not null default now(),
-  primary key (id, user_id)
+  primary key (user_id, id)
 );
 
 create table if not exists meal_templates (
@@ -36,7 +40,7 @@ create table if not exists meal_templates (
   data        jsonb       not null,
   updated_at  timestamptz not null default now(),
   created_at  timestamptz not null default now(),
-  primary key (id, user_id)
+  primary key (user_id, id)
 );
 
 create table if not exists nutrition_logs (
@@ -45,7 +49,7 @@ create table if not exists nutrition_logs (
   data        jsonb       not null,
   updated_at  timestamptz not null default now(),
   created_at  timestamptz not null default now(),
-  primary key (id, user_id)
+  primary key (user_id, id)
 );
 
 create table if not exists nutrition_plans (
@@ -54,7 +58,7 @@ create table if not exists nutrition_plans (
   data        jsonb       not null,
   updated_at  timestamptz not null default now(),
   created_at  timestamptz not null default now(),
-  primary key (id, user_id)
+  primary key (user_id, id)
 );
 
 create table if not exists nutrition_week_assignments (
@@ -63,7 +67,7 @@ create table if not exists nutrition_week_assignments (
   data        jsonb       not null,
   updated_at  timestamptz not null default now(),
   created_at  timestamptz not null default now(),
-  primary key (id, user_id)
+  primary key (user_id, id)
 );
 
 -- ── Perfil (um registo por utilizador) ───────────────────────────────────────
@@ -109,3 +113,10 @@ create policy "own" on nutrition_week_assignments
 
 create policy "own" on profiles
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ── Migração (se já tinhas as tabelas com PK (id, user_id)) ─────────────────
+-- Descomenta e corre se precisares de corrigir tabelas existentes:
+--
+-- alter table workout_plans drop constraint workout_plans_pkey;
+-- alter table workout_plans add primary key (user_id, id);
+-- (repete para cada tabela)
