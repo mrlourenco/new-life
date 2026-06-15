@@ -67,7 +67,7 @@ function ExerciseForm({ form, onChange, onSubmit, onCancel, submitLabel }: {
       />
       <select
         value={form.muscle}
-        onChange={e => set({ muscle: e.target.value })}
+        onChange={e => { const m = e.target.value; set(m === 'cardio' ? { muscle: m, sets: 0 } : { muscle: m }) }}
         className="w-full bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-[#f97316]"
       >
         <option value="">Grupo muscular (opcional)</option>
@@ -76,13 +76,13 @@ function ExerciseForm({ form, onChange, onSubmit, onCancel, submitLabel }: {
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <p className="text-[10px] text-[#525252] uppercase tracking-wider text-center">Séries</p>
-          <input type="number" min={1} max={20} value={form.sets}
-            onChange={e => set({ sets: Math.max(1, parseInt(e.target.value) || 1) })}
+          <input type="number" min={0} max={20} value={form.sets}
+            onChange={e => set({ sets: Math.max(0, parseInt(e.target.value) || 0) })}
             className="w-full bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl px-2 py-2 text-white text-sm text-center outline-none focus:border-[#f97316]" />
         </div>
         <div className="space-y-1">
-          <p className="text-[10px] text-[#525252] uppercase tracking-wider text-center">Reps</p>
-          <input value={form.reps} onChange={e => set({ reps: e.target.value })} placeholder="10"
+          <p className="text-[10px] text-[#525252] uppercase tracking-wider text-center">{form.muscle === 'cardio' ? 'Dur./Dist.' : 'Reps'}</p>
+          <input value={form.reps} onChange={e => set({ reps: e.target.value })} placeholder={form.muscle === 'cardio' ? '30 min' : '10'}
             className="w-full bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl px-2 py-2 text-white text-sm text-center outline-none focus:border-[#f97316]" />
         </div>
         <div className="space-y-1">
@@ -213,7 +213,7 @@ export default function SessionDetail({ plan, session, onStart, onUpdatePlan, on
                       <p className="text-sm font-semibold text-white">{ex.name}</p>
                       <p className="text-[10px] text-[#525252] mt-0.5">{muscleLabel(ex.muscle)} · {equipmentLabel(ex.equipment)}</p>
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
-                        <span className="text-[11px] text-[#a3a3a3]">{ex.sets} × {ex.reps}</span>
+                        <span className="text-[11px] text-[#a3a3a3]">{ex.sets > 0 ? `${ex.sets} × ${ex.reps}` : ex.reps}</span>
                         <span className="text-[11px] text-[#737373] flex items-center gap-0.5"><Clock size={9} />{ex.rest_seconds}s</span>
                         {ex.target_weight != null && <span className="text-[11px] text-[#f97316]">{ex.target_weight}kg</span>}
                         {ex.weight_suggestion && !ex.target_weight && <span className="text-[11px] text-[#f97316]">{ex.weight_suggestion}</span>}

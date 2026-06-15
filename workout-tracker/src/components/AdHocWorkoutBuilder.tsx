@@ -103,7 +103,7 @@ export default function AdHocWorkoutBuilder({ onStart, onSave, onClose }: Props)
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{e.name}</p>
                   <p className="text-[10px] text-[#525252] mt-0.5">
-                    {e.sets}×{e.reps}{e.weight != null ? ` · ${e.weight}kg` : ''} · {e.rest_seconds}s
+                    {e.sets > 0 ? `${e.sets}×${e.reps}` : e.reps}{e.weight != null ? ` · ${e.weight}kg` : ''} · {e.rest_seconds}s
                     {e.muscle !== 'other' && ` · ${muscleLabel(e.muscle)}`}
                   </p>
                 </div>
@@ -138,7 +138,7 @@ export default function AdHocWorkoutBuilder({ onStart, onSave, onClose }: Props)
 
           <select
             value={exMuscle}
-            onChange={e => setExMuscle(e.target.value)}
+            onChange={e => { const m = e.target.value; setExMuscle(m); if (m === 'cardio') setExSets(0) }}
             className="w-full bg-[#0f0f0f] border border-[#2e2e2e] rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-[#f97316]"
           >
             <option value="">Grupo muscular (opcional)</option>
@@ -150,14 +150,14 @@ export default function AdHocWorkoutBuilder({ onStart, onSave, onClose }: Props)
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <p className="text-[10px] text-[#525252] uppercase tracking-wider text-center">Séries</p>
-              <input type="number" min={1} max={20} value={exSets}
-                onChange={e => setExSets(Math.max(1, parseInt(e.target.value) || 1))}
+              <input type="number" min={0} max={20} value={exSets}
+                onChange={e => setExSets(Math.max(0, parseInt(e.target.value) || 0))}
                 className="w-full bg-[#0f0f0f] border border-[#2e2e2e] rounded-xl px-2 py-2.5 text-white text-sm text-center outline-none focus:border-[#f97316]"
               />
             </div>
             <div className="space-y-1">
-              <p className="text-[10px] text-[#525252] uppercase tracking-wider text-center">Reps</p>
-              <input value={exReps} onChange={e => setExReps(e.target.value)} placeholder="10"
+              <p className="text-[10px] text-[#525252] uppercase tracking-wider text-center">{exMuscle === 'cardio' ? 'Dur./Dist.' : 'Reps'}</p>
+              <input value={exReps} onChange={e => setExReps(e.target.value)} placeholder={exMuscle === 'cardio' ? '30 min' : '10'}
                 className="w-full bg-[#0f0f0f] border border-[#2e2e2e] rounded-xl px-2 py-2.5 text-white text-sm text-center outline-none focus:border-[#f97316]"
               />
             </div>
