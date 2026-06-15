@@ -30,6 +30,7 @@ export function loadJSON<T>(key: StorageKey): T | null {
 export function saveJSON(key: StorageKey, value: unknown): void {
   try {
     localStorage.setItem(key, JSON.stringify(value))
+    window.dispatchEvent(new CustomEvent('nl:save', { detail: { key, value } }))
   } catch (err) {
     // QuotaExceededError ou storage indisponível — os dados em memória
     // continuam válidos, mas não persistem

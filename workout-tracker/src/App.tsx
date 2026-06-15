@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAuth } from './hooks/useAuth'
 import { usePlans, useLogs, useActiveWorkout, useExerciseHistory } from './hooks/useStore'
 import { useMealTemplates, useNutritionLogs, useNutritionPlans } from './hooks/useNutritionStore'
 import { useWeekAssignments } from './hooks/useWeekAssignments'
@@ -15,6 +16,7 @@ import type { WorkoutPlan, WorkoutSession, ActiveWorkout } from './types/workout
 
 export default function App() {
   const today = useToday()
+  const { user, syncing, emailSent, signIn, signInWithGoogle, signOut, syncNow } = useAuth()
   const [tab, setTab] = useState<Tab>('workout')
   const [workoutTab, setWorkoutTab] = useState<WorkoutTab>('hoje')
   const [showActive, setShowActive] = useState(false)
@@ -152,6 +154,13 @@ export default function App() {
             onAddWeightEntry={addWeightEntry}
             onDeleteWeightEntry={deleteWeightEntry}
             onDeleteNutritionLog={deleteNutritionLog}
+            user={user}
+            syncing={syncing}
+            emailSent={emailSent}
+            onSignIn={signIn}
+            onSignInWithGoogle={signInWithGoogle}
+            onSignOut={signOut}
+            onSyncNow={syncNow}
           />
         )}
       </main>

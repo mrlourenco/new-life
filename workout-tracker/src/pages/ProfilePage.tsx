@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Trash2, Scale, Target } from 'lucide-react'
+import { Trash2, Scale, Target, RefreshCw, LogOut, Mail, Cloud } from 'lucide-react'
+import type { User } from '@supabase/supabase-js'
 import type { MacroTargets, WeightEntry } from '../types/profile'
 import type { DayNutritionLog, NutritionPlan, WeekAssignment } from '../types/nutrition'
 import NutritionEvolutionPage from './nutrition/NutritionEvolutionPage'
@@ -51,17 +52,34 @@ interface Props {
   onAddWeightEntry: (e: WeightEntry) => void
   onDeleteWeightEntry: (id: string) => void
   onDeleteNutritionLog: (id: string) => void
+  user: User | null
+  syncing: boolean
+  emailSent: boolean
+  onSignIn: (email: string) => Promise<{ error: unknown }>
+  onSignInWithGoogle: () => Promise<void>
+  onSignOut: () => Promise<void>
+  onSyncNow: () => Promise<void>
 }
 
 export default function ProfilePage({
   macroTargets, weightEntries, weekStartDay, nutritionLogs, nutritionPlans, nutritionAssignments, today,
   onSaveMacroTargets, onSaveWeekStartDay, onAddWeightEntry, onDeleteWeightEntry, onDeleteNutritionLog,
+  user, syncing, emailSent, onSignIn, onSignInWithGoogle, onSignOut, onSyncNow,
 }: Props) {
   const [tab, setTab] = useState<ProfileTab>('perfil')
   const [targets, setTargets] = useState<MacroTargets>({ ...macroTargets })
   const [dirty, setDirty] = useState(false)
   const [weightInput, setWeightInput] = useState('')
   const [weightNote, setWeightNote] = useState('')
+  const [emailInput, setEmailInput] = useState('')
+  const [signInError, setSignInError] = useState('')
+
+  const handleSignIn = async () => {
+    if (!emailInput.trim()) return
+    setSignInError('')
+    const { error } = await onSignIn(emailInput.trim())
+    if (error) setSignInError('Erro ao enviar o link. Verifica o email e tenta novamente.')
+  }
 
   const update = (key: keyof MacroTargets, val: number) => {
     setTargets(prev => ({ ...prev, [key]: val }))
@@ -254,6 +272,85 @@ export default function ProfilePage({
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* Account / Sync */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Cloud size={16} className="text-[#22c55e]" />
+              <p className="text-sm font-semibold text-white">Conta e sincronização</p>
+            </div>
+
+            {user ? (
+              <div className="bg-[#1a1a1a] rounded-xl px-4 py-4 space-y-3">
+                <div>
+                  <p className="text-xs text-[#737373]">Sessão iniciada como</p>
+                  <p className="text-sm text-white font-medium mt-0.5 break-all">{user.email}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={onSyncNow}
+                    disabled={syncing}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#22c55e]/10 border border-[#22c55e]/30 rounded-xl text-[#22c55e] text-sm font-medium disabled:opacity-40"
+                  >
+                    <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
+                    {syncing ? 'A sincronizar…' : 'Sincronizar'}
+                  </button>
+                  <button
+                    onClick={onSignOut}
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl text-[#737373] text-sm hover:text-red-400 hover:border-red-400/30"
+                  >
+                    <LogOut size={14} />
+                  </button>
+                </div>
+              </div>
+            ) : emailSent ? (
+              <div className="bg-[#1a1a1a] rounded-xl px-4 py-4 text-center space-y-1">
+                <Mail size={20} className="text-[#22c55e] mx-auto" />
+                <p className="text-sm text-white font-medium">Link enviado!</p>
+                <p className="text-xs text-[#737373]">Verifica o teu email e clica no link para entrar.</p>
+              </div>
+            ) : (
+              <div className="bg-[#1a1a1a] rounded-xl px-4 py-4 space-y-3">
+                <p className="text-xs text-[#737373]">Inicia sessão para sincronizar os teus dados entre dispositivos.</p>
+
+                <button
+                  onClick={onSignInWithGoogle}
+                  className="w-full flex items-center justify-center gap-3 py-2.5 bg-white rounded-xl text-[#1a1a1a] text-sm font-semibold"
+                >
+                  <svg width="18" height="18" viewBox="0 0 48 48">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                  </svg>
+                  Entrar com Google
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-px bg-[#2e2e2e]" />
+                  <span className="text-[10px] text-[#525252]">ou por email</span>
+                  <div className="flex-1 h-px bg-[#2e2e2e]" />
+                </div>
+
+                <input
+                  type="email"
+                  value={emailInput}
+                  onChange={e => setEmailInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSignIn()}
+                  placeholder="email@exemplo.com"
+                  className="w-full bg-[#0f0f0f] border border-[#2e2e2e] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#22c55e]"
+                />
+                {signInError && <p className="text-xs text-red-400">{signInError}</p>}
+                <button
+                  onClick={handleSignIn}
+                  disabled={!emailInput.trim()}
+                  className="w-full py-2.5 bg-[#22c55e] rounded-xl text-black text-sm font-semibold disabled:opacity-40"
+                >
+                  Enviar link de acesso
+                </button>
               </div>
             )}
           </div>
