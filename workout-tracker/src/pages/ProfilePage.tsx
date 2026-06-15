@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Trash2, Scale, Target } from 'lucide-react'
+import { Trash2, Scale, Target, RefreshCw, LogOut, Mail, Cloud } from 'lucide-react'
+import type { User } from '@supabase/supabase-js'
 import type { MacroTargets, WeightEntry } from '../types/profile'
 import type { DayNutritionLog, NutritionPlan, WeekAssignment } from '../types/nutrition'
 import NutritionEvolutionPage from './nutrition/NutritionEvolutionPage'
@@ -51,17 +52,33 @@ interface Props {
   onAddWeightEntry: (e: WeightEntry) => void
   onDeleteWeightEntry: (id: string) => void
   onDeleteNutritionLog: (id: string) => void
+  user: User | null
+  syncing: boolean
+  emailSent: boolean
+  onSignIn: (email: string) => Promise<{ error: unknown }>
+  onSignOut: () => Promise<void>
+  onSyncNow: () => Promise<void>
 }
 
 export default function ProfilePage({
   macroTargets, weightEntries, weekStartDay, nutritionLogs, nutritionPlans, nutritionAssignments, today,
   onSaveMacroTargets, onSaveWeekStartDay, onAddWeightEntry, onDeleteWeightEntry, onDeleteNutritionLog,
+  user, syncing, emailSent, onSignIn, onSignOut, onSyncNow,
 }: Props) {
   const [tab, setTab] = useState<ProfileTab>('perfil')
   const [targets, setTargets] = useState<MacroTargets>({ ...macroTargets })
   const [dirty, setDirty] = useState(false)
   const [weightInput, setWeightInput] = useState('')
   const [weightNote, setWeightNote] = useState('')
+  const [emailInput, setEmailInput] = useState('')
+  const [signInError, setSignInError] = useState('')
+
+  const handleSignIn = async () => {
+    if (!emailInput.trim()) return
+    setSignInError('')
+    const { error } = await onSignIn(emailInput.trim())
+    if (error) setSignInError('Erro ao enviar o link. Verifica o email e tenta novamente.')
+  }
 
   const update = (key: keyof MacroTargets, val: number) => {
     setTargets(prev => ({ ...prev, [key]: val }))
@@ -254,6 +271,65 @@ export default function ProfilePage({
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* Account / Sync */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Cloud size={16} className="text-[#22c55e]" />
+              <p className="text-sm font-semibold text-white">Conta e sincronização</p>
+            </div>
+
+            {user ? (
+              <div className="bg-[#1a1a1a] rounded-xl px-4 py-4 space-y-3">
+                <div>
+                  <p className="text-xs text-[#737373]">Sessão iniciada como</p>
+                  <p className="text-sm text-white font-medium mt-0.5 break-all">{user.email}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={onSyncNow}
+                    disabled={syncing}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#22c55e]/10 border border-[#22c55e]/30 rounded-xl text-[#22c55e] text-sm font-medium disabled:opacity-40"
+                  >
+                    <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
+                    {syncing ? 'A sincronizar…' : 'Sincronizar'}
+                  </button>
+                  <button
+                    onClick={onSignOut}
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl text-[#737373] text-sm hover:text-red-400 hover:border-red-400/30"
+                  >
+                    <LogOut size={14} />
+                  </button>
+                </div>
+              </div>
+            ) : emailSent ? (
+              <div className="bg-[#1a1a1a] rounded-xl px-4 py-4 text-center space-y-1">
+                <Mail size={20} className="text-[#22c55e] mx-auto" />
+                <p className="text-sm text-white font-medium">Link enviado!</p>
+                <p className="text-xs text-[#737373]">Verifica o teu email e clica no link para entrar.</p>
+              </div>
+            ) : (
+              <div className="bg-[#1a1a1a] rounded-xl px-4 py-4 space-y-3">
+                <p className="text-xs text-[#737373]">Inicia sessão para sincronizar os teus dados entre dispositivos. Sem palavra-passe — recebes um link por email.</p>
+                <input
+                  type="email"
+                  value={emailInput}
+                  onChange={e => setEmailInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSignIn()}
+                  placeholder="email@exemplo.com"
+                  className="w-full bg-[#0f0f0f] border border-[#2e2e2e] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#22c55e]"
+                />
+                {signInError && <p className="text-xs text-red-400">{signInError}</p>}
+                <button
+                  onClick={handleSignIn}
+                  disabled={!emailInput.trim()}
+                  className="w-full py-2.5 bg-[#22c55e] rounded-xl text-black text-sm font-semibold disabled:opacity-40"
+                >
+                  Enviar link de acesso
+                </button>
               </div>
             )}
           </div>
