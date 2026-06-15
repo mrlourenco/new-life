@@ -99,6 +99,9 @@ function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave,
   }
 
   const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
+  const adhocPlan = plans.find(p => p.id === 'adhoc')
+  // Show only selected ad-hoc sessions (already assigned to this day) — not all saved ones
+  const selectedAdhocSessions = (adhocPlan?.sessions ?? []).filter(s => selected.has(s.id))
   const byPlan = plans.filter(p => p.id !== 'adhoc').map(plan => ({ plan, sessions: plan.sessions })).filter(g => g.sessions.length > 0)
 
   return (
@@ -123,13 +126,24 @@ function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave,
           </button>
         )}
 
-        {selected.size > 0 && (
-          <p className="text-xs text-[#737373]">{selected.size} sessão(ões) selecionada(s)</p>
-        )}
-
         {/* Ad-hoc section */}
         <div className="space-y-2">
           <p className="text-[11px] text-[#525252] font-semibold uppercase tracking-wider">Treino livre</p>
+          {selectedAdhocSessions.map(s => (
+            <button key={s.id} onClick={() => toggle(s.id)}
+              className="w-full text-left px-4 py-3 rounded-xl border border-[#f97316] bg-[#f97316]/10 transition-all">
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full border-2 border-[#f97316] bg-[#f97316] flex items-center justify-center flex-shrink-0">
+                  <Check size={10} className="text-black" />
+                </div>
+                <Dumbbell size={13} className="text-[#f97316] flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white">{s.name}</p>
+                  <p className="text-[10px] text-[#525252]">{s.exercises.length} exercícios{s.muscle_groups.length > 0 ? ` · ${s.muscle_groups.map(muscleLabel).join(', ')}` : ''}</p>
+                </div>
+              </div>
+            </button>
+          ))}
           <button onClick={() => setShowBuilder(true)}
             className="w-full flex items-center gap-3 px-4 py-3 border border-dashed border-[#2e2e2e] bg-[#1a1a1a] rounded-xl hover:border-[#f97316]/40 transition-colors">
             <Plus size={14} className="text-[#f97316] flex-shrink-0" />
