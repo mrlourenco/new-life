@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Clock, Plus, Trash2 } from 'lucide-react'
+import { X, Clock, Plus, Trash2, Check } from 'lucide-react'
 import type { MealEntry, MealCategory, FoodItem } from '../../types/nutrition'
 import { MEAL_CATEGORIES } from '../../types/nutrition'
 import { entryMacros } from '../../utils/nutrition'
@@ -18,10 +18,50 @@ export default function MealEntryEditor({ entry, onSave, onCancel }: Props) {
   const [time, setTime] = useState(entry.time ?? '')
   const [foods, setFoods] = useState<FoodItem[]>([...entry.foods])
   const [showFoodPicker, setShowFoodPicker] = useState(false)
+  const [editingIdx, setEditingIdx] = useState<number | null>(null)
+  const [editGrams, setEditGrams] = useState('')
 
   const macros = entryMacros({ foods })
 
-  const removeFood = (i: number) => setFoods(prev => prev.filter((_, idx) => idx !== i))
+  const removeFood = (i: number) => {
+    setFoods(prev => prev.filter((_, idx) => idx !== i))
+    if (editingIdx === i) setEditingIdx(null)
+  }
+
+  const startEditQuantity = (i: number) => {
+    const food = foods[i]
+    // Pre-fill with the numeric part if quantity is "Xg"
+    const parsed = parseFloat(food.quantity)
+    setEditGrams(parsed > 0 ? String(parsed) : food.quantity)
+    setEditingIdx(i)
+  }
+
+  const confirmEditQuantity = () => {
+    if (editingIdx === null) return
+    const food = foods[editingIdx]
+    const newG = parseFloat(editGrams)
+
+    if (newG > 0) {
+      const oldG = parseFloat(food.quantity)
+      if (oldG > 0) {
+        // Recalculate macros proportionally
+        const ratio = newG / oldG
+        setFoods(prev => prev.map((f, i) => i !== editingIdx ? f : {
+          ...f,
+          quantity: `${newG}g`,
+          calories: Math.round(f.calories * ratio * 10) / 10,
+          protein_g: Math.round((f.protein_g ?? 0) * ratio * 10) / 10,
+          carbs_g: Math.round((f.carbs_g ?? 0) * ratio * 10) / 10,
+          fat_g: Math.round((f.fat_g ?? 0) * ratio * 10) / 10,
+          fiber_g: Math.round((f.fiber_g ?? 0) * ratio * 10) / 10,
+        }))
+      } else {
+        // Can't recalculate — just update quantity text
+        setFoods(prev => prev.map((f, i) => i !== editingIdx ? f : { ...f, quantity: `${newG}g` }))
+      }
+    }
+    setEditingIdx(null)
+  }
 
   const handleSave = () => {
     if (!name.trim()) return
@@ -80,15 +120,44 @@ export default function MealEntryEditor({ entry, onSave, onCancel }: Props) {
               <span className="text-[10px] text-[#a78bfa]">G {Math.round(macros.fat_g)}g</span>
             </div>
             {foods.map((f, i) => (
-              <div key={i} className="flex items-center gap-2 bg-[#0f0f0f] rounded-xl px-3 py-2">
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs text-[#a3a3a3]">{f.name}</span>
-                  <span className="text-[10px] text-[#525252] ml-1">({f.quantity})</span>
+              <div key={i} className="bg-[#0f0f0f] rounded-xl px-3 py-2 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs text-[#a3a3a3]">{f.name}</span>
+                  </div>
+                  <span className="text-[10px] text-[#737373] flex-shrink-0">{Math.round(f.calories)} kcal</span>
+                  <button onClick={() => removeFood(i)} className="p-1 text-[#525252] hover:text-red-400 flex-shrink-0">
+                    <Trash2 size={12} />
+                  </button>
                 </div>
-                <span className="text-[10px] text-[#737373] flex-shrink-0">{Math.round(f.calories)} kcal</span>
-                <button onClick={() => removeFood(i)} className="p-1 text-[#525252] hover:text-red-400 flex-shrink-0">
-                  <Trash2 size={12} />
-                </button>
+                {editingIdx === i ? (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-1 bg-[#1a1a1a] border border-[#22c55e] rounded-lg px-2.5 py-1.5">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={editGrams}
+                        onChange={e => setEditGrams(e.target.value.replace(/[^0-9.]/g, ''))}
+                        autoFocus
+                        className="flex-1 bg-transparent text-white text-xs outline-none w-16"
+                      />
+                      <span className="text-[10px] text-[#525252]">g</span>
+                    </div>
+                    <button onClick={confirmEditQuantity}
+                      className="p-1.5 bg-[#22c55e] rounded-lg text-black flex-shrink-0">
+                      <Check size={12} />
+                    </button>
+                    <button onClick={() => setEditingIdx(null)}
+                      className="p-1.5 text-[#525252] hover:text-[#a3a3a3] flex-shrink-0">
+                      <X size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => startEditQuantity(i)}
+                    className="text-[10px] text-[#525252] hover:text-[#22c55e] transition-colors">
+                    {f.quantity} · toque para editar
+                  </button>
+                )}
               </div>
             ))}
           </div>
