@@ -16,7 +16,7 @@ import type { WorkoutPlan, WorkoutSession, ActiveWorkout } from './types/workout
 
 export default function App() {
   const today = useToday()
-  const { user, syncing, emailSent, signIn, signOut, syncNow } = useAuth()
+  const { user, syncing, emailSent, signIn, signInWithGoogle, signOut, syncNow } = useAuth()
   const [tab, setTab] = useState<Tab>('workout')
   const [workoutTab, setWorkoutTab] = useState<WorkoutTab>('hoje')
   const [showActive, setShowActive] = useState(false)
@@ -158,6 +158,7 @@ export default function App() {
             syncing={syncing}
             emailSent={emailSent}
             onSignIn={signIn}
+            onSignInWithGoogle={signInWithGoogle}
             onSignOut={signOut}
             onSyncNow={syncNow}
           />
