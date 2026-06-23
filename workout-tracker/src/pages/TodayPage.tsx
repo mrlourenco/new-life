@@ -265,7 +265,7 @@ export default function TodayPage({
                 </div>
               )
             })}
-            {hasAdHoc && (
+            {hasAdHoc && scheduled.length > 0 && (
               <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-dashed border-[#f97316]/30">
                 <p className="text-white font-semibold mb-0.5">Treino livre</p>
                 <p className="text-[#737373] text-xs mb-3">Por configurar</p>
