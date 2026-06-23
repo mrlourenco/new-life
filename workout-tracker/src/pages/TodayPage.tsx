@@ -101,6 +101,7 @@ export default function TodayPage({
   const dateLabel = new Date(today + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
 
   const todayLogs = logs.filter(l => l.date === today)
+  const doneSessionIds = new Set(todayLogs.map(l => l.session_id))
   const sessionIds = getDaySessionIds(today, assignments, plans, weekStartDay)
   const hasAdHoc = sessionIds.includes(ADHOC_ID)
 
@@ -111,7 +112,8 @@ export default function TodayPage({
       const found = findSession(plans, id)
       return found ? { ...found, origIdx } : null
     })
-    .filter(Boolean) as ({ plan: WorkoutPlan; session: WorkoutSession; origIdx: number })[]
+    .filter(Boolean)
+    .filter(({ session }) => !doneSessionIds.has(session.id)) as ({ plan: WorkoutPlan; session: WorkoutSession; origIdx: number })[]
 
   const getWeekStart = () => getWeekDates(today, weekStartDay)[0]
 
@@ -138,11 +140,6 @@ export default function TodayPage({
   const handleRemoveSession = (origIdx: number) => {
     const newIds = sessionIds.filter((_, i) => i !== origIdx)
     onSaveDayOverride(getWeekStart(), today, newIds)
-  }
-
-  const handleCompleteAndRemoveSession = (plan: WorkoutPlan, session: WorkoutSession, origIdx: number) => {
-    onCompleteQuick(plan, session)
-    handleRemoveSession(origIdx)
   }
 
   if (showBuilder) {
@@ -256,7 +253,7 @@ export default function TodayPage({
                     <button onClick={() => handleRemoveSession(origIdx)} className="p-1.5 text-[#525252] hover:text-red-400 flex-shrink-0 -mt-0.5"><X size={15} /></button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => handleCompleteAndRemoveSession(plan, session, origIdx)}
+                    <button onClick={() => onCompleteQuick(plan, session)}
                       className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl text-[#a3a3a3] text-sm font-semibold hover:border-[#22c55e]/50 hover:text-[#22c55e] transition-colors">
                       <Check size={15} />Feito
                     </button>
