@@ -94,25 +94,9 @@ export default function App() {
 
   const handleCompleteQuick = (plan: WorkoutPlan, session: WorkoutSession, date = localISODate()) => {
     const existingLog = logs.find(l => l.date === date && l.session_id === session.id)
+    if (existingLog) return
 
-    let activityNotes: string | undefined
-    if (session.kind === 'activity') {
-      const value = window.prompt('Observações da atividade (opcional):', existingLog?.activity_notes)
-      if (value === null) return
-      activityNotes = value
-    }
-
-    if (existingLog) {
-      if (session.kind === 'activity') {
-        updateLog({
-          ...existingLog,
-          activity_notes: activityNotes?.trim() || undefined,
-        })
-      }
-      return
-    }
-
-    addLog(buildWorkoutLog(plan, session, exerciseHistory, true, date, activityNotes))
+    addLog(buildWorkoutLog(plan, session, exerciseHistory, true, date))
   }
 
   const handleFinish = (workout: ActiveWorkout) => {
