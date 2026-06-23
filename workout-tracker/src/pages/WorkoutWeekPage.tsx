@@ -91,7 +91,7 @@ function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave,
   const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
   const adhocPlan = plans.find(p => p.id === 'adhoc')
   const selectedAdhocSessions = (adhocPlan?.sessions ?? []).filter(s => selected.has(s.id))
-  const normalPlans = plans.filter(p => p.id !== 'adhoc')
+  const normalPlans = plans.filter(p => p.id !== 'adhoc' && p.sessions.length > 0)
 
   return (
     <div className="fixed inset-0 z-50 bg-[#0f0f0f] flex flex-col">
@@ -116,6 +116,8 @@ function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave,
             <button onClick={() => setShowActivityBuilder(true)} className="flex items-center gap-2 px-3 py-3 border border-dashed border-[#2e2e2e] bg-[#1a1a1a] rounded-xl"><Zap size={14} className="text-[#f97316]" /><span className="text-xs text-[#a3a3a3]">Atividade / Aula</span></button>
           </div>
         </div>
+
+        {normalPlans.length === 0 && <p className="text-center text-[#525252] text-sm py-2">Sem planos. Cria um no separador Planos.</p>}
 
         {normalPlans.map(plan => (
           <div key={plan.id} className="space-y-2">
@@ -150,7 +152,9 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
   const anchor = anchorDate.toISOString().slice(0, 10)
   const weekDates = getWeekDates(anchor, weekStartDay)
   const weekStart = weekDates[0]
-  const weekLabel = `${new Date(weekDates[0] + 'T12:00:00').getDate()} ${new Date(weekDates[0] + 'T12:00:00').toLocaleDateString('pt-PT', { month: 'short' })} – ${new Date(weekDates[6] + 'T12:00:00').getDate()} ${new Date(weekDates[6] + 'T12:00:00').toLocaleDateString('pt-PT', { month: 'short' })}`
+  const weekStartD = new Date(weekDates[0] + 'T12:00:00')
+  const weekEndD = new Date(weekDates[6] + 'T12:00:00')
+  const weekLabel = `${weekStartD.getDate()} ${weekStartD.toLocaleDateString('pt-PT', { month: 'short' })} – ${weekEndD.getDate()} ${weekEndD.toLocaleDateString('pt-PT', { month: 'short' })}`
   const assignment = assignments.find(a => a.week_start === weekStart)
   const assignedPlan = plans.find(p => p.id === assignment?.plan_id)
 
@@ -182,7 +186,8 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
           const doneSessionIds = new Set(logs.filter(l => l.date === date).map(l => l.session_id))
           const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short' })
           const hasOverride = assignment?.day_overrides.some(o => o.date === date) ?? false
-          const totalCount = daySessions.length + (sessionIds.includes('adhoc') ? 1 : 0)
+          const hasAdHoc = sessionIds.includes('adhoc')
+          const totalCount = daySessions.length + (hasAdHoc ? 1 : 0)
 
           return (
             <div key={date} className={`rounded-2xl overflow-hidden ${isToday ? 'ring-1 ring-[#f97316]' : ''}`}>
@@ -205,6 +210,7 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
                       </div>
                     )
                   })}
+                  {hasAdHoc && <div className="flex items-center gap-2 py-1.5"><Dumbbell size={11} className="text-[#f97316]" /><p className="text-xs text-[#a3a3a3] italic">Treino livre</p></div>}
                 </div>
               ) : <div className="bg-[#131313] px-4 py-2"><p className="text-[10px] text-[#3f3f3f]">Dia de descanso</p></div>}
             </div>
