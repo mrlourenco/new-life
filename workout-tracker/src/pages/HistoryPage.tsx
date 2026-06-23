@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Trash2, Clock, Trophy, TrendingUp, ChevronRight, X, Check, Minus } from 'lucide-react'
+import { Trash2, Clock, Trophy, TrendingUp, ChevronRight, X, Check, Minus, Zap, Flame, StickyNote } from 'lucide-react'
 import type { WorkoutLog } from '../types/workout'
-import { muscleLabel } from '../utils/labels'
+import { activityIntensityLabel, activityTypeLabel, muscleLabel } from '../utils/labels'
 import { formatDurationSeconds } from '../utils/format'
 
 interface Props {
@@ -25,6 +25,7 @@ function WorkoutDetail({ log, onClose, onDelete }: { log: WorkoutLog; onClose: (
   const vol = totalVolume(log)
   const completedSets = log.exercises.flatMap(e => e.sets).filter(s => s.completed).length
   const totalSets = log.exercises.flatMap(e => e.sets).length
+  const isActivity = log.kind === 'activity'
 
   return (
     <div className="fixed inset-0 z-50 bg-[#0f0f0f] flex flex-col">
@@ -45,26 +46,52 @@ function WorkoutDetail({ log, onClose, onDelete }: { log: WorkoutLog; onClose: (
       </div>
 
       {/* Summary stats */}
-      <div className="flex gap-3 px-4 py-3 border-b border-[#1a1a1a]">
+      <div className="flex gap-3 px-4 py-3 border-b border-[#1a1a1a] flex-wrap">
         <div className="flex items-center gap-1.5 text-xs text-[#737373]">
           <Clock size={13} className="text-[#f97316]" />
           {formatDurationSeconds(log.duration_seconds)}
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-[#737373]">
-          <Trophy size={13} className="text-[#f97316]" />
-          {completedSets}/{totalSets} séries
-        </div>
+        {isActivity ? (
+          <div className="flex items-center gap-1.5 text-xs text-[#737373]">
+            <Zap size={13} className="text-[#f97316]" />
+            {activityTypeLabel(log.activity_type ?? 'other')}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-xs text-[#737373]">
+            <Trophy size={13} className="text-[#f97316]" />
+            {completedSets}/{totalSets} séries
+          </div>
+        )}
         {vol > 0 && (
           <div className="flex items-center gap-1.5 text-xs text-[#737373]">
             <TrendingUp size={13} className="text-[#f97316]" />
             {Math.round(vol)} kg volume
           </div>
         )}
+        {log.activity_intensity && (
+          <div className="flex items-center gap-1.5 text-xs text-[#737373]">
+            <Flame size={13} className="text-[#f97316]" />
+            {activityIntensityLabel(log.activity_intensity)}
+          </div>
+        )}
       </div>
 
-      {/* Exercise detail list */}
+      {/* Detail list */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {log.exercises.map(ex => {
+        {isActivity ? (
+          <div className="bg-[#1a1a1a] rounded-2xl p-4 space-y-3">
+            <p className="text-white font-semibold">Resumo da atividade</p>
+            {log.activity_calories != null && (
+              <p className="text-sm text-[#a3a3a3] flex items-center gap-2"><Flame size={14} className="text-[#f97316]" />{log.activity_calories} kcal</p>
+            )}
+            {log.activity_notes && (
+              <p className="text-sm text-[#a3a3a3] flex items-start gap-2"><StickyNote size={14} className="text-[#f97316] mt-0.5" />{log.activity_notes}</p>
+            )}
+            {!log.activity_notes && log.activity_calories == null && (
+              <p className="text-sm text-[#737373]">Sem notas adicionais.</p>
+            )}
+          </div>
+        ) : log.exercises.map(ex => {
           const completedCount = ex.sets.filter(s => s.completed).length
           const exVol = ex.sets.reduce((acc, s) => {
             if (s.completed && s.weight_kg && s.reps_done) return acc + s.weight_kg * s.reps_done
@@ -175,6 +202,7 @@ export default function HistoryPage({ logs, onDelete }: Props) {
           const vol = totalVolume(log)
           const completedSets = log.exercises.flatMap(e => e.sets).filter(s => s.completed).length
           const totalSets = log.exercises.flatMap(e => e.sets).length
+          const isActivity = log.kind === 'activity'
 
           return (
             <button
@@ -192,15 +220,22 @@ export default function HistoryPage({ logs, onDelete }: Props) {
                 <ChevronRight size={18} className="text-[#525252] mt-0.5" />
               </div>
 
-              <div className="flex gap-4 mt-3">
+              <div className="flex gap-4 mt-3 flex-wrap">
                 <div className="flex items-center gap-1.5 text-xs text-[#737373]">
                   <Clock size={12} />
                   {formatDurationSeconds(log.duration_seconds)}
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-[#737373]">
-                  <Trophy size={12} />
-                  {completedSets}/{totalSets} séries
-                </div>
+                {isActivity ? (
+                  <div className="flex items-center gap-1.5 text-xs text-[#737373]">
+                    <Zap size={12} />
+                    {activityTypeLabel(log.activity_type ?? 'other')}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-xs text-[#737373]">
+                    <Trophy size={12} />
+                    {completedSets}/{totalSets} séries
+                  </div>
+                )}
                 {vol > 0 && (
                   <div className="flex items-center gap-1.5 text-xs text-[#737373]">
                     <TrendingUp size={12} />
@@ -209,19 +244,21 @@ export default function HistoryPage({ logs, onDelete }: Props) {
                 )}
               </div>
 
-              <div className="mt-3 space-y-1">
-                {log.exercises.map(ex => {
-                  const done = ex.sets.filter(s => s.completed).length
-                  return (
-                    <div key={ex.exercise_id} className="flex items-center justify-between text-xs">
-                      <span className="text-[#a3a3a3] truncate max-w-[60%]">{ex.exercise_name}</span>
-                      <span className={`font-medium ${done === ex.sets.length ? 'text-[#4ade80]' : 'text-[#737373]'}`}>
-                        {done}/{ex.sets.length} séries
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
+              {!isActivity && (
+                <div className="mt-3 space-y-1">
+                  {log.exercises.map(ex => {
+                    const done = ex.sets.filter(s => s.completed).length
+                    return (
+                      <div key={ex.exercise_id} className="flex items-center justify-between text-xs">
+                        <span className="text-[#a3a3a3] truncate max-w-[60%]">{ex.exercise_name}</span>
+                        <span className={`font-medium ${done === ex.sets.length ? 'text-[#4ade80]' : 'text-[#737373]'}`}>
+                          {done}/{ex.sets.length} séries
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </button>
           )
         })}
