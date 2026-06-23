@@ -27,7 +27,7 @@ export default function ActiveActivityView({ active, onUpdate, onFinish, onDisca
 
   const handleFinish = () => {
     const now = new Date().toISOString()
-    const duration = Math.floor((new Date(now).getTime() - new Date(active.log.started_at).getTime()) / 1000)
+    const duration = Math.floor((Date.now() - new Date(active.log.started_at).getTime()) / 1000)
     onFinish({
       ...active,
       log: { ...active.log, finished_at: now, duration_seconds: duration, kind: 'activity' },
@@ -82,7 +82,7 @@ export default function ActiveActivityView({ active, onUpdate, onFinish, onDisca
             <Flame size={13} className="text-[#f97316]" />Calorias opcionais
           </label>
           <input type="number" min={0} inputMode="numeric" value={active.log.activity_calories ?? ''}
-            onChange={e => updateLog({ activity_calories: e.target.value ? parseInt(e.target.value) || 0 : undefined })}
+            onChange={e => updateLog({ activity_calories: e.target.value ? Math.max(0, parseInt(e.target.value) || 0) : undefined })}
             placeholder="Ex: 350"
             className="w-full bg-[#0f0f0f] border border-[#2e2e2e] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#f97316]" />
         </div>
