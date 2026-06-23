@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, X, Pencil, Check, Calendar, Dumbbell, CheckCircle2, Play, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Pencil, Check, Calendar, Dumbbell, CheckCircle2, Play, Plus, Zap } from 'lucide-react'
 import type { WorkoutPlan, WorkoutSession, WorkoutLog, WorkoutWeekAssignment } from '../types/workout'
 import { getWeekDates } from '../utils/dates'
 import { getDaySessionIds, findSession } from '../utils/workout'
-import { muscleLabel } from '../utils/labels'
+import { activityTypeLabel, muscleLabel } from '../utils/labels'
 import SessionDetail from '../components/workout/SessionDetail'
 import AdHocWorkoutBuilder from '../components/AdHocWorkoutBuilder'
+import ActivityBuilder from '../components/ActivityBuilder'
 
 interface Props {
   today: string
@@ -56,6 +57,19 @@ function PlanPicker({ plans, currentPlanId, onSelect, onClose }: {
   )
 }
 
+function SessionMeta({ session }: { session: WorkoutSession }) {
+  if (session.kind === 'activity') {
+    return <>{activityTypeLabel(session.activity_type ?? 'other')}{session.planned_duration_minutes ? ` · ${session.planned_duration_minutes} min` : ''}</>
+  }
+  return <>{session.exercises?.length ?? 0} exercícios{(session.muscle_groups?.length ?? 0) > 0 ? ' · ' + session.muscle_groups?.map(muscleLabel).join(', ') : ''}</>
+}
+
+function SessionIcon({ session, className = 'text-[#f97316]' }: { session: WorkoutSession; className?: string }) {
+  return session.kind === 'activity'
+    ? <Zap size={13} className={`${className} flex-shrink-0`} />
+    : <Dumbbell size={13} className={`${className} flex-shrink-0`} />
+}
+
 function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave, onClearOverride, onClose, onUpdatePlan }: {
   date: string
   currentSessionIds: string[]
@@ -66,9 +80,9 @@ function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave,
   onClose: () => void
   onUpdatePlan: (plan: WorkoutPlan) => void
 }) {
-  // Filter out the 'adhoc' placeholder; configured ad-hoc sessions have real UUIDs
   const [selected, setSelected] = useState<Set<string>>(new Set(currentSessionIds.filter(id => id !== 'adhoc')))
   const [showBuilder, setShowBuilder] = useState(false)
+  const [showActivityBuilder, setShowActivityBuilder] = useState(false)
 
   const toggle = (id: string) => setSelected(prev => {
     const next = new Set(prev)
@@ -87,20 +101,19 @@ function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave,
     })
     setSelected(prev => new Set([...prev, session.id]))
     setShowBuilder(false)
+    setShowActivityBuilder(false)
   }
 
   if (showBuilder) {
-    return (
-      <AdHocWorkoutBuilder
-        onSave={handleBuilderSave}
-        onClose={() => setShowBuilder(false)}
-      />
-    )
+    return <AdHocWorkoutBuilder onSave={handleBuilderSave} onClose={() => setShowBuilder(false)} />
+  }
+
+  if (showActivityBuilder) {
+    return <ActivityBuilder onSave={handleBuilderSave} onClose={() => setShowActivityBuilder(false)} />
   }
 
   const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
   const adhocPlan = plans.find(p => p.id === 'adhoc')
-  // Show only selected ad-hoc sessions (already assigned to this day) — not all saved ones
   const selectedAdhocSessions = (adhocPlan?.sessions ?? []).filter(s => selected.has(s.id))
   const byPlan = plans.filter(p => p.id !== 'adhoc').map(plan => ({ plan, sessions: plan.sessions })).filter(g => g.sessions.length > 0)
 
@@ -126,9 +139,8 @@ function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave,
           </button>
         )}
 
-        {/* Ad-hoc section */}
         <div className="space-y-2">
-          <p className="text-[11px] text-[#525252] font-semibold uppercase tracking-wider">Treino livre</p>
+          <p className="text-[11px] text-[#525252] font-semibold uppercase tracking-wider">Livre / Atividade</p>
           {selectedAdhocSessions.map(s => (
             <button key={s.id} onClick={() => toggle(s.id)}
               className="w-full text-left px-4 py-3 rounded-xl border border-[#f97316] bg-[#f97316]/10 transition-all">
@@ -136,19 +148,26 @@ function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave,
                 <div className="w-5 h-5 rounded-full border-2 border-[#f97316] bg-[#f97316] flex items-center justify-center flex-shrink-0">
                   <Check size={10} className="text-black" />
                 </div>
-                <Dumbbell size={13} className="text-[#f97316] flex-shrink-0" />
+                <SessionIcon session={s} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white">{s.name}</p>
-                  <p className="text-[10px] text-[#525252]">{s.exercises.length} exercícios{s.muscle_groups.length > 0 ? ` · ${s.muscle_groups.map(muscleLabel).join(', ')}` : ''}</p>
+                  <p className="text-[10px] text-[#525252]"><SessionMeta session={s} /></p>
                 </div>
               </div>
             </button>
           ))}
-          <button onClick={() => setShowBuilder(true)}
-            className="w-full flex items-center gap-3 px-4 py-3 border border-dashed border-[#2e2e2e] bg-[#1a1a1a] rounded-xl hover:border-[#f97316]/40 transition-colors">
-            <Plus size={14} className="text-[#f97316] flex-shrink-0" />
-            <p className="text-sm text-[#a3a3a3]">Criar treino livre</p>
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => setShowBuilder(true)}
+              className="flex items-center gap-2 px-3 py-3 border border-dashed border-[#2e2e2e] bg-[#1a1a1a] rounded-xl hover:border-[#f97316]/40 transition-colors">
+              <Plus size={14} className="text-[#f97316] flex-shrink-0" />
+              <p className="text-xs text-[#a3a3a3] text-left">Treino livre</p>
+            </button>
+            <button onClick={() => setShowActivityBuilder(true)}
+              className="flex items-center gap-2 px-3 py-3 border border-dashed border-[#2e2e2e] bg-[#1a1a1a] rounded-xl hover:border-[#f97316]/40 transition-colors">
+              <Zap size={14} className="text-[#f97316] flex-shrink-0" />
+              <p className="text-xs text-[#a3a3a3] text-left">Atividade / Aula</p>
+            </button>
+          </div>
         </div>
 
         {byPlan.length === 0 && (
@@ -167,10 +186,10 @@ function DaySessionEditor({ date, currentSessionIds, hasOverride, plans, onSave,
                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-[#f97316] bg-[#f97316]' : 'border-[#3f3f3f]'}`}>
                       {isSelected && <Check size={10} className="text-black" />}
                     </div>
-                    <Dumbbell size={13} className="text-[#f97316] flex-shrink-0" />
+                    <SessionIcon session={s} />
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm font-medium ${isSelected ? 'text-white' : 'text-[#a3a3a3]'}`}>{s.name}</p>
-                      <p className="text-[10px] text-[#525252]">{s.exercises.length} exercícios · {s.muscle_groups.map(muscleLabel).join(', ')}</p>
+                      <p className="text-[10px] text-[#525252]"><SessionMeta session={s} /></p>
                     </div>
                   </div>
                 </button>
@@ -249,7 +268,6 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Week navigation bar */}
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#1a1a1a] bg-[#0f0f0f]">
         <button onClick={() => setWeekOffset(w => w - 1)} className="p-1.5 text-[#525252] hover:text-white">
           <ChevronLeft size={18} />
@@ -265,7 +283,6 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
         </button>
       </div>
 
-      {/* Plan assignment bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-[#0a0a0a] border-b border-[#1a1a1a]">
         <div className="flex items-center gap-2 min-w-0">
           <Calendar size={13} className="text-[#525252] flex-shrink-0" />
@@ -314,12 +331,15 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
                 <div className="bg-[#131313] px-3 pb-2 pt-1 space-y-0.5">
                   {daySessions.map(({ plan: sessionPlan, session: s }) => {
                     const done = doneSessionIds.has(s.id)
+                    const isActivity = s.kind === 'activity'
                     return (
-                      <button key={s.id} onClick={() => setViewing({ plan: sessionPlan, session: s })}
-                        className="w-full flex items-center gap-2 py-1.5 text-left">
-                        <Dumbbell size={11} className="text-[#f97316] flex-shrink-0" />
+                      <button key={s.id} onClick={() => isActivity ? undefined : setViewing({ plan: sessionPlan, session: s })} disabled={isActivity}
+                        className="w-full flex items-center gap-2 py-1.5 text-left disabled:cursor-default">
+                        {isActivity ? <Zap size={11} className="text-[#f97316] flex-shrink-0" /> : <Dumbbell size={11} className="text-[#f97316] flex-shrink-0" />}
                         <p className="text-xs text-[#a3a3a3] flex-1 truncate">{s.name}</p>
-                        <span className="text-[10px] text-[#525252] flex-shrink-0">{s.exercises.length} ex.</span>
+                        <span className="text-[10px] text-[#525252] flex-shrink-0">
+                          {isActivity ? activityTypeLabel(s.activity_type ?? 'other') : (s.exercises?.length ?? 0) + ' ex.'}
+                        </span>
                         {done && <CheckCircle2 size={12} className="text-[#22c55e] flex-shrink-0" />}
                       </button>
                     )
