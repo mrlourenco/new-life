@@ -61,7 +61,7 @@ function SessionMeta({ session }: { session: WorkoutSession }) {
   if (session.kind === 'activity') {
     return <>{activityTypeLabel(session.activity_type ?? 'other')}{session.planned_duration_minutes ? ` · ${session.planned_duration_minutes} min` : ''}</>
   }
-  return <>{session.exercises.length} exercícios{session.muscle_groups.length > 0 ? ` · ${session.muscle_groups.map(muscleLabel).join(', ')}` : ''}</>
+  return <>{session.exercises?.length ?? 0} exercícios{(session.muscle_groups?.length ?? 0) > 0 ? ' · ' + session.muscle_groups?.map(muscleLabel).join(', ') : ''}</>
 }
 
 function SessionIcon({ session, className = 'text-[#f97316]' }: { session: WorkoutSession; className?: string }) {
@@ -338,7 +338,7 @@ export default function WorkoutWeekPage({ today, plans, logs, weekStartDay, assi
                         {isActivity ? <Zap size={11} className="text-[#f97316] flex-shrink-0" /> : <Dumbbell size={11} className="text-[#f97316] flex-shrink-0" />}
                         <p className="text-xs text-[#a3a3a3] flex-1 truncate">{s.name}</p>
                         <span className="text-[10px] text-[#525252] flex-shrink-0">
-                          {isActivity ? activityTypeLabel(s.activity_type ?? 'other') : `${s.exercises.length} ex.`}
+                          {isActivity ? activityTypeLabel(s.activity_type ?? 'other') : (s.exercises?.length ?? 0) + ' ex.'}
                         </span>
                         {done && <CheckCircle2 size={12} className="text-[#22c55e] flex-shrink-0" />}
                       </button>
