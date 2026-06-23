@@ -104,7 +104,6 @@ export default function TodayPage({
   const sessionIds = getDaySessionIds(today, assignments, plans, weekStartDay)
   const hasAdHoc = sessionIds.includes(ADHOC_ID)
 
-  // Keep original index so we can remove by position (allows duplicates)
   const scheduled = sessionIds
     .map((id, origIdx) => ({ id, origIdx }))
     .filter(({ id }) => id !== ADHOC_ID)
@@ -142,21 +141,11 @@ export default function TodayPage({
   }
 
   if (showBuilder) {
-    return (
-      <AdHocWorkoutBuilder
-        onSave={handleBuilderSave}
-        onClose={() => setShowBuilder(false)}
-      />
-    )
+    return <AdHocWorkoutBuilder onSave={handleBuilderSave} onClose={() => setShowBuilder(false)} />
   }
 
   if (showActivityBuilder) {
-    return (
-      <ActivityBuilder
-        onSave={handleBuilderSave}
-        onClose={() => setShowActivityBuilder(false)}
-      />
-    )
+    return <ActivityBuilder onSave={handleBuilderSave} onClose={() => setShowActivityBuilder(false)} />
   }
 
   if (editingLog) {
@@ -203,8 +192,7 @@ export default function TodayPage({
           </p>
           <button onClick={onResume}
             className="mt-4 w-full flex items-center justify-center gap-2 py-3 bg-[#f97316] rounded-xl text-white font-semibold hover:bg-[#ea6c0a] transition-colors">
-            <Play size={18} fill="currentColor" />
-            Continuar treino
+            <Play size={18} fill="currentColor" />Continuar treino
           </button>
         </div>
       )}
@@ -231,13 +219,8 @@ export default function TodayPage({
                       </p>
                     </div>
                     <div className="flex flex-col gap-1 flex-shrink-0">
-                      <button onClick={() => setEditingLog(log)} className="p-1.5 text-[#525252] hover:text-[#f97316]">
-                        <Pencil size={14} />
-                      </button>
-                      <button onClick={() => { if (confirm('Apagar este treino?')) onDeleteLog(log.id) }}
-                        className="p-1.5 text-[#525252] hover:text-red-400">
-                        <Trash2 size={14} />
-                      </button>
+                      <button onClick={() => setEditingLog(log)} className="p-1.5 text-[#525252] hover:text-[#f97316]"><Pencil size={14} /></button>
+                      <button onClick={() => { if (confirm('Apagar este treino?')) onDeleteLog(log.id) }} className="p-1.5 text-[#525252] hover:text-red-400"><Trash2 size={14} /></button>
                     </div>
                   </div>
                 </div>
@@ -256,7 +239,7 @@ export default function TodayPage({
               return (
                 <div key={origIdx} className="bg-[#1a1a1a] rounded-2xl p-4">
                   <div className="flex items-start gap-2 mb-3">
-                    <button onClick={() => isActivity ? undefined : setViewing({ plan, session })} className="flex-1 text-left">
+                    <button onClick={() => setViewing({ plan, session })} disabled={isActivity} className="flex-1 text-left disabled:cursor-default">
                       <p className="text-white font-semibold">{session.name}</p>
                       <p className="text-[#737373] text-xs mt-0.5">
                         {isActivity
@@ -265,10 +248,7 @@ export default function TodayPage({
                         {!isActivity && session.muscle_groups.length > 0 && ` · ${session.muscle_groups.map(muscleLabel).join(', ')}`}
                       </p>
                     </button>
-                    <button onClick={() => handleRemoveSession(origIdx)}
-                      className="p-1.5 text-[#525252] hover:text-red-400 flex-shrink-0 -mt-0.5">
-                      <X size={15} />
-                    </button>
+                    <button onClick={() => handleRemoveSession(origIdx)} className="p-1.5 text-[#525252] hover:text-red-400 flex-shrink-0 -mt-0.5"><X size={15} /></button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <button onClick={() => onCompleteQuick(plan, session)}
@@ -297,20 +277,15 @@ export default function TodayPage({
         </div>
       ) : (
         <div className="mb-6 flex flex-col items-center py-10 text-center">
-          <div className="w-14 h-14 bg-[#1a1a1a] rounded-full flex items-center justify-center mb-3">
-            <Zap size={24} className="text-[#f97316]" />
-          </div>
+          <div className="w-14 h-14 bg-[#1a1a1a] rounded-full flex items-center justify-center mb-3"><Zap size={24} className="text-[#f97316]" /></div>
           <p className="text-white font-semibold">Sem treino planeado</p>
           <p className="text-[#737373] text-sm mt-1 max-w-xs">Adiciona um treino abaixo ou planeia a semana no separador Semana</p>
         </div>
       )}
 
-      <button
-        onClick={() => setShowAdder(true)}
-        className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#1a1a1a] border border-[#2e2e2e] rounded-2xl text-[#a3a3a3] text-sm font-medium hover:border-[#f97316]/40 hover:text-[#f97316] transition-colors"
-      >
-        <Plus size={15} />
-        Adicionar treino
+      <button onClick={() => setShowAdder(true)}
+        className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#1a1a1a] border border-[#2e2e2e] rounded-2xl text-[#a3a3a3] text-sm font-medium hover:border-[#f97316]/40 hover:text-[#f97316] transition-colors">
+        <Plus size={15} />Adicionar treino
       </button>
 
       {showAdder && (
