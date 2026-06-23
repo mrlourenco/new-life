@@ -52,7 +52,7 @@ export default function WorkoutLogEditor({ log, onSave, onDelete, onCancel }: Pr
               </label>
               <textarea
                 value={draft.activity_notes ?? ''}
-                onChange={e => setDraft(prev => ({ ...prev, activity_notes: e.target.value }))}
+                onChange={e => setDraft(prev => ({ ...prev, activity_notes: e.target.value || undefined }))}
                 placeholder="Como correu? Sensações, carga, dificuldade..."
                 rows={5}
                 className="w-full bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#f97316] resize-none"
