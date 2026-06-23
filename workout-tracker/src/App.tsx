@@ -9,10 +9,49 @@ import { useToday } from './hooks/useToday'
 import { localISODate } from './utils/dates'
 import BottomNav, { type Tab } from './components/BottomNav'
 import ActiveWorkoutView from './components/ActiveWorkoutView'
+import ActiveActivityView from './components/ActiveActivityView'
 import WorkoutPage, { type WorkoutTab } from './pages/WorkoutPage'
 import NutritionPage from './pages/NutritionPage'
 import ProfilePage from './pages/ProfilePage'
-import type { WorkoutPlan, WorkoutSession, ActiveWorkout } from './types/workout'
+import type { WorkoutPlan, WorkoutSession, ActiveWorkout, WorkoutLog } from './types/workout'
+
+function buildWorkoutLog(plan: WorkoutPlan, session: WorkoutSession, exerciseHistory: ReturnType<typeof useExerciseHistory>, completed: boolean): WorkoutLog {
+  const now = new Date().toISOString()
+  const durationSeconds = session.kind === 'activity' && session.planned_duration_minutes != null
+    ? session.planned_duration_minutes * 60
+    : completed ? 0 : undefined
+
+  return {
+    id: crypto.randomUUID(),
+    session_id: session.id,
+    plan_id: plan.id,
+    session_name: session.name,
+    kind: session.kind ?? 'strength',
+    activity_type: session.activity_type,
+    date: localISODate(),
+    started_at: now,
+    finished_at: completed ? now : undefined,
+    duration_seconds: completed ? durationSeconds : undefined,
+    exercises: session.exercises.map(ex => {
+      const hist = exerciseHistory.get(ex.name.toLowerCase().trim())
+      return {
+        exercise_id: ex.id,
+        exercise_name: ex.name,
+        muscle: ex.muscle,
+        notes: ex.notes,
+        sets: Array.from({ length: ex.sets }, (_, i) => ({
+          set_number: i + 1,
+          reps_target: ex.reps,
+          reps_done: completed ? parseInt(ex.reps) || undefined : undefined,
+          // pre-fill: planned target weight, else what was lifted last time
+          weight_kg: ex.target_weight ?? hist?.sets[i]?.weight_kg ?? hist?.sets[hist.sets.length - 1]?.weight_kg,
+          completed,
+          completed_at: completed ? now : undefined,
+        })),
+      }
+    }),
+  }
+}
 
 export default function App() {
   const today = useToday()
@@ -36,37 +75,17 @@ export default function App() {
   const { profile, saveMacroTargets, saveWeekStartDay, addWeightEntry, deleteWeightEntry } = useProfileStore()
 
   const handleStart = (plan: WorkoutPlan, session: WorkoutSession) => {
-    const now = new Date().toISOString()
     const workout: ActiveWorkout = {
-      log: {
-        id: crypto.randomUUID(),
-        session_id: session.id,
-        plan_id: plan.id,
-        session_name: session.name,
-        date: localISODate(),
-        started_at: now,
-        exercises: session.exercises.map(ex => {
-          const hist = exerciseHistory.get(ex.name.toLowerCase().trim())
-          return {
-            exercise_id: ex.id,
-            exercise_name: ex.name,
-            muscle: ex.muscle,
-            notes: ex.notes,
-            sets: Array.from({ length: ex.sets }, (_, i) => ({
-              set_number: i + 1,
-              reps_target: ex.reps,
-              // pre-fill: planned target weight, else what was lifted last time
-              weight_kg: ex.target_weight ?? hist?.sets[i]?.weight_kg ?? hist?.sets[hist.sets.length - 1]?.weight_kg,
-              completed: false,
-            })),
-          }
-        }),
-      },
+      log: buildWorkoutLog(plan, session, exerciseHistory, false),
       session,
       current_exercise_index: 0,
     }
     startWorkout(workout)
     setShowActive(true)
+  }
+
+  const handleCompleteQuick = (plan: WorkoutPlan, session: WorkoutSession) => {
+    addLog(buildWorkoutLog(plan, session, exerciseHistory, true))
   }
 
   const handleFinish = (workout: ActiveWorkout) => {
@@ -87,13 +106,22 @@ export default function App() {
   if (showActive && active) {
     return (
       <div className="h-full flex flex-col">
-        <ActiveWorkoutView
-          active={active}
-          onUpdate={updateActive}
-          onFinish={handleFinish}
-          onDiscard={handleDiscard}
-          exerciseHistory={exerciseHistory}
-        />
+        {active.session.kind === 'activity' ? (
+          <ActiveActivityView
+            active={active}
+            onUpdate={updateActive}
+            onFinish={handleFinish}
+            onDiscard={handleDiscard}
+          />
+        ) : (
+          <ActiveWorkoutView
+            active={active}
+            onUpdate={updateActive}
+            onFinish={handleFinish}
+            onDiscard={handleDiscard}
+            exerciseHistory={exerciseHistory}
+          />
+        )}
       </div>
     )
   }
@@ -112,6 +140,7 @@ export default function App() {
             logs={logs}
             assignments={workoutAssignments}
             onStart={handleStart}
+            onCompleteQuick={handleCompleteQuick}
             onResume={() => setShowActive(true)}
             onAddPlan={addPlan}
             onDeletePlan={deletePlan}

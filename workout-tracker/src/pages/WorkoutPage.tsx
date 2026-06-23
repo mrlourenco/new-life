@@ -16,6 +16,7 @@ interface Props {
   logs: WorkoutLog[]
   assignments: WorkoutWeekAssignment[]
   onStart: (plan: WorkoutPlan, session: WorkoutSession) => void
+  onCompleteQuick: (plan: WorkoutPlan, session: WorkoutSession) => void
   onResume: () => void
   onAddPlan: (plan: WorkoutPlan) => void
   onDeletePlan: (id: string) => void
@@ -34,7 +35,7 @@ const TABS: { id: WorkoutTab; label: string }[] = [
 
 export default function WorkoutPage({
   tab, onTabChange, today, weekStartDay, plans, active, logs, assignments,
-  onStart, onResume, onAddPlan, onDeletePlan, onUpdateLog, onDeleteLog, onAssignPlan, onSaveDayOverride,
+  onStart, onCompleteQuick, onResume, onAddPlan, onDeletePlan, onUpdateLog, onDeleteLog, onAssignPlan, onSaveDayOverride,
 }: Props) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -57,7 +58,7 @@ export default function WorkoutPage({
           <TodayPage
             today={today} plans={plans} active={active} logs={logs}
             assignments={assignments} weekStartDay={weekStartDay}
-            onStart={onStart} onResume={onResume} onUpdateLog={onUpdateLog} onDeleteLog={onDeleteLog}
+            onStart={onStart} onCompleteQuick={onCompleteQuick} onResume={onResume} onUpdateLog={onUpdateLog} onDeleteLog={onDeleteLog}
             onUpdatePlan={onAddPlan} onSaveDayOverride={onSaveDayOverride}
           />
         )}
