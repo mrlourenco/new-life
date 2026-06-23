@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { X, Check, Trash2 } from 'lucide-react'
+import { X, Check, Trash2, StickyNote } from 'lucide-react'
 import type { WorkoutLog, SetLog } from '../../types/workout'
-import { muscleLabel } from '../../utils/labels'
+import { activityTypeLabel, muscleLabel } from '../../utils/labels'
 
 interface Props {
   log: WorkoutLog
@@ -13,6 +13,7 @@ interface Props {
 // Edit the recorded sets (weight / reps / done) of a completed workout.
 export default function WorkoutLogEditor({ log, onSave, onDelete, onCancel }: Props) {
   const [draft, setDraft] = useState<WorkoutLog>(() => JSON.parse(JSON.stringify(log)))
+  const isActivity = draft.kind === 'activity'
 
   const updateSet = (exIdx: number, setIdx: number, field: keyof SetLog, value: number | boolean) => {
     setDraft(prev => {
@@ -38,7 +39,27 @@ export default function WorkoutLogEditor({ log, onSave, onDelete, onCancel }: Pr
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-5">
-        {draft.exercises.map((ex, exIdx) => (
+        {isActivity ? (
+          <div className="space-y-4">
+            <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-[#2e2e2e]">
+              <p className="text-white font-semibold">{draft.session_name}</p>
+              <p className="text-xs text-[#737373] mt-1">{activityTypeLabel(draft.activity_type ?? 'other')}</p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-xs text-[#737373] font-semibold uppercase tracking-wider">
+                <StickyNote size={13} className="text-[#f97316]" />Observações
+              </label>
+              <textarea
+                value={draft.activity_notes ?? ''}
+                onChange={e => setDraft(prev => ({ ...prev, activity_notes: e.target.value }))}
+                placeholder="Como correu? Sensações, carga, dificuldade..."
+                rows={5}
+                className="w-full bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#f97316] resize-none"
+              />
+            </div>
+          </div>
+        ) : draft.exercises.map((ex, exIdx) => (
           <div key={exIdx} className="space-y-2">
             <div>
               <p className="text-sm font-bold text-white">{ex.exercise_name}</p>
