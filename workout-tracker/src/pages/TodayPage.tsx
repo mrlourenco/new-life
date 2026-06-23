@@ -140,6 +140,11 @@ export default function TodayPage({
     onSaveDayOverride(getWeekStart(), today, newIds)
   }
 
+  const handleCompleteAndRemoveSession = (plan: WorkoutPlan, session: WorkoutSession, origIdx: number) => {
+    onCompleteQuick(plan, session)
+    handleRemoveSession(origIdx)
+  }
+
   if (showBuilder) {
     return <AdHocWorkoutBuilder onSave={handleBuilderSave} onClose={() => setShowBuilder(false)} />
   }
@@ -251,7 +256,7 @@ export default function TodayPage({
                     <button onClick={() => handleRemoveSession(origIdx)} className="p-1.5 text-[#525252] hover:text-red-400 flex-shrink-0 -mt-0.5"><X size={15} /></button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => onCompleteQuick(plan, session)}
+                    <button onClick={() => handleCompleteAndRemoveSession(plan, session, origIdx)}
                       className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl text-[#a3a3a3] text-sm font-semibold hover:border-[#22c55e]/50 hover:text-[#22c55e] transition-colors">
                       <Check size={15} />Feito
                     </button>
