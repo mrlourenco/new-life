@@ -16,7 +16,7 @@ interface Props {
   logs: WorkoutLog[]
   assignments: WorkoutWeekAssignment[]
   onStart: (plan: WorkoutPlan, session: WorkoutSession) => void
-  onCompleteQuick: (plan: WorkoutPlan, session: WorkoutSession) => void
+  onCompleteQuick: (plan: WorkoutPlan, session: WorkoutSession, date?: string) => void
   onResume: () => void
   onAddPlan: (plan: WorkoutPlan) => void
   onDeletePlan: (id: string) => void
@@ -66,7 +66,7 @@ export default function WorkoutPage({
           <WorkoutWeekPage
             today={today} plans={plans} logs={logs} weekStartDay={weekStartDay}
             assignments={assignments} onAssignPlan={onAssignPlan} onSaveDayOverride={onSaveDayOverride}
-            onUpdatePlan={onAddPlan}
+            onUpdatePlan={onAddPlan} onCompleteQuick={onCompleteQuick}
           />
         )}
         {tab === 'planos' && (
