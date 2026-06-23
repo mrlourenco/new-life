@@ -101,7 +101,6 @@ export default function TodayPage({
   const dateLabel = new Date(today + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
 
   const todayLogs = logs.filter(l => l.date === today)
-  const doneSessionIds = new Set(todayLogs.map(l => l.session_id))
   const sessionIds = getDaySessionIds(today, assignments, plans, weekStartDay)
   const hasAdHoc = sessionIds.includes(ADHOC_ID)
 
@@ -112,8 +111,7 @@ export default function TodayPage({
       const found = findSession(plans, id)
       return found ? { ...found, origIdx } : null
     })
-    .filter(Boolean)
-    .filter(({ session }) => !doneSessionIds.has(session.id)) as ({ plan: WorkoutPlan; session: WorkoutSession; origIdx: number })[]
+    .filter(Boolean) as ({ plan: WorkoutPlan; session: WorkoutSession; origIdx: number })[]
 
   const getWeekStart = () => getWeekDates(today, weekStartDay)[0]
 
@@ -238,6 +236,7 @@ export default function TodayPage({
           <div className="space-y-3">
             {scheduled.map(({ plan, session, origIdx }) => {
               const isActivity = session.kind === 'activity'
+              const isDone = todayLogs.some(log => log.session_id === session.id)
               return (
                 <div key={origIdx} className="bg-[#1a1a1a] rounded-2xl p-4">
                   <div className="flex items-start gap-2 mb-3">
@@ -253,12 +252,12 @@ export default function TodayPage({
                     <button onClick={() => handleRemoveSession(origIdx)} className="p-1.5 text-[#525252] hover:text-red-400 flex-shrink-0 -mt-0.5"><X size={15} /></button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => onCompleteQuick(plan, session)}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl text-[#a3a3a3] text-sm font-semibold hover:border-[#22c55e]/50 hover:text-[#22c55e] transition-colors">
+                    <button onClick={() => !isDone && onCompleteQuick(plan, session)} disabled={isDone}
+                      className={`w-full flex items-center justify-center gap-2 py-2.5 bg-[#1a1a1a] border rounded-xl text-sm font-semibold transition-colors ${isDone ? 'border-[#22c55e]/40 text-[#22c55e]' : 'border-[#2e2e2e] text-[#a3a3a3] hover:border-[#22c55e]/50 hover:text-[#22c55e]'}`}>
                       <Check size={15} />Feito
                     </button>
-                    <button onClick={() => onStart(plan, session)}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#f97316] rounded-xl text-white text-sm font-semibold hover:bg-[#ea6c0a] transition-colors">
+                    <button onClick={() => onStart(plan, session)} disabled={isDone}
+                      className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors ${isDone ? 'bg-[#1a1a1a] border border-[#2e2e2e] text-[#525252]' : 'bg-[#f97316] text-white hover:bg-[#ea6c0a]'}`}>
                       <Play size={15} fill="currentColor" />Iniciar
                     </button>
                   </div>
