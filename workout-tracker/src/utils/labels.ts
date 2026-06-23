@@ -1,3 +1,5 @@
+import type { ActivityIntensity, ActivityType } from '../types/workout'
+
 export const MUSCLE_PT: Record<string, string> = {
   chest: 'Peito',
   back: 'Costas',
@@ -27,10 +29,32 @@ export const EQUIPMENT_PT: Record<string, string> = {
   other: 'Outro',
 }
 
+export const ACTIVITY_TYPE_PT: Record<ActivityType, string> = {
+  class: 'Aula',
+  cardio: 'Cardio',
+  mobility: 'Mobilidade',
+  sport: 'Desporto',
+  other: 'Outra atividade',
+}
+
+export const ACTIVITY_INTENSITY_PT: Record<ActivityIntensity, string> = {
+  light: 'Leve',
+  moderate: 'Moderada',
+  hard: 'Forte',
+}
+
 export function muscleLabel(m: string) {
   return MUSCLE_PT[m.toLowerCase()] ?? m
 }
 
 export function equipmentLabel(e: string) {
   return EQUIPMENT_PT[e.toLowerCase()] ?? e
+}
+
+export function activityTypeLabel(t: ActivityType) {
+  return ACTIVITY_TYPE_PT[t] ?? t
+}
+
+export function activityIntensityLabel(i: ActivityIntensity) {
+  return ACTIVITY_INTENSITY_PT[i] ?? i
 }
