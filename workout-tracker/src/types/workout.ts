@@ -1,5 +1,9 @@
 import type { Timestamped } from './common'
 
+export type SessionKind = 'strength' | 'activity'
+export type ActivityType = 'class' | 'cardio' | 'mobility' | 'sport' | 'other'
+export type ActivityIntensity = 'light' | 'moderate' | 'hard'
+
 export interface Exercise {
   id: string
   name: string
@@ -16,6 +20,9 @@ export interface Exercise {
 export interface WorkoutSession {
   id: string
   name: string
+  kind?: SessionKind       // undefined/strength = structured exercise workout
+  activity_type?: ActivityType
+  planned_duration_minutes?: number
   day_of_week?: number
   muscle_groups: string[]
   exercises: Exercise[]
@@ -52,6 +59,11 @@ export interface WorkoutLog extends Timestamped {
   session_id: string
   plan_id: string
   session_name: string
+  kind?: SessionKind
+  activity_type?: ActivityType
+  activity_intensity?: ActivityIntensity
+  activity_notes?: string
+  activity_calories?: number
   date: string
   started_at: string
   finished_at?: string
