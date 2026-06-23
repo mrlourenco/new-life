@@ -15,7 +15,14 @@ import NutritionPage from './pages/NutritionPage'
 import ProfilePage from './pages/ProfilePage'
 import type { WorkoutPlan, WorkoutSession, ActiveWorkout, WorkoutLog } from './types/workout'
 
-function buildWorkoutLog(plan: WorkoutPlan, session: WorkoutSession, exerciseHistory: ReturnType<typeof useExerciseHistory>, completed: boolean): WorkoutLog {
+function buildWorkoutLog(
+  plan: WorkoutPlan,
+  session: WorkoutSession,
+  exerciseHistory: ReturnType<typeof useExerciseHistory>,
+  completed: boolean,
+  date = localISODate(),
+  activityNotes?: string,
+): WorkoutLog {
   const now = new Date().toISOString()
   const durationSeconds = session.kind === 'activity' && session.planned_duration_minutes != null
     ? session.planned_duration_minutes * 60
@@ -28,11 +35,12 @@ function buildWorkoutLog(plan: WorkoutPlan, session: WorkoutSession, exerciseHis
     session_name: session.name,
     kind: session.kind ?? 'strength',
     activity_type: session.activity_type,
-    date: localISODate(),
+    activity_notes: activityNotes?.trim() || undefined,
+    date,
     started_at: now,
     finished_at: completed ? now : undefined,
     duration_seconds: completed ? durationSeconds : undefined,
-    exercises: session.exercises.map(ex => {
+    exercises: (session.exercises ?? []).map(ex => {
       const hist = exerciseHistory.get(ex.name.toLowerCase().trim())
       return {
         exercise_id: ex.id,
@@ -84,8 +92,28 @@ export default function App() {
     setShowActive(true)
   }
 
-  const handleCompleteQuick = (plan: WorkoutPlan, session: WorkoutSession) => {
-    addLog(buildWorkoutLog(plan, session, exerciseHistory, true))
+  const handleCompleteQuick = (plan: WorkoutPlan, session: WorkoutSession, date = localISODate()) => {
+    let activityNotes: string | undefined
+    if (session.kind === 'activity') {
+      const value = window.prompt('Observações da atividade (opcional):')
+      if (value === null) return
+      activityNotes = value
+    }
+
+    const existingLog = logs.find(l => l.date === date && l.session_id === session.id)
+    const nextLog = buildWorkoutLog(plan, session, exerciseHistory, true, date, activityNotes)
+
+    if (existingLog) {
+      updateLog({
+        ...nextLog,
+        id: existingLog.id,
+        created_at: existingLog.created_at,
+        activity_notes: activityNotes?.trim() || existingLog.activity_notes,
+      })
+      return
+    }
+
+    addLog(nextLog)
   }
 
   const handleFinish = (workout: ActiveWorkout) => {
