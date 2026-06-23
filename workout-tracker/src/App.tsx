@@ -93,27 +93,26 @@ export default function App() {
   }
 
   const handleCompleteQuick = (plan: WorkoutPlan, session: WorkoutSession, date = localISODate()) => {
+    const existingLog = logs.find(l => l.date === date && l.session_id === session.id)
+
     let activityNotes: string | undefined
     if (session.kind === 'activity') {
-      const value = window.prompt('Observações da atividade (opcional):')
+      const value = window.prompt('Observações da atividade (opcional):', existingLog?.activity_notes)
       if (value === null) return
       activityNotes = value
     }
 
-    const existingLog = logs.find(l => l.date === date && l.session_id === session.id)
-    const nextLog = buildWorkoutLog(plan, session, exerciseHistory, true, date, activityNotes)
-
     if (existingLog) {
-      updateLog({
-        ...nextLog,
-        id: existingLog.id,
-        created_at: existingLog.created_at,
-        activity_notes: activityNotes?.trim() || existingLog.activity_notes,
-      })
+      if (session.kind === 'activity') {
+        updateLog({
+          ...existingLog,
+          activity_notes: activityNotes?.trim() || undefined,
+        })
+      }
       return
     }
 
-    addLog(nextLog)
+    addLog(buildWorkoutLog(plan, session, exerciseHistory, true, date, activityNotes))
   }
 
   const handleFinish = (workout: ActiveWorkout) => {
