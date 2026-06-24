@@ -242,7 +242,10 @@ export default function TodayPage({
                 <div key={origIdx} className="bg-[#1a1a1a] rounded-2xl p-4">
                   <div className="flex items-start gap-2 mb-3">
                     <button onClick={() => setViewing({ plan, session })} disabled={isActivity} className="flex-1 text-left disabled:cursor-default">
-                      <p className="text-white font-semibold">{session.name}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-white font-semibold">{session.name}</p>
+                        {isDone && <span className="text-[10px] bg-[#22c55e]/15 text-[#22c55e] px-2 py-0.5 rounded-full font-semibold">Concluído</span>}
+                      </div>
                       <p className="text-[#737373] text-xs mt-0.5">
                         {isActivity
                           ? `${activityTypeLabel(session.activity_type ?? 'other')}${session.planned_duration_minutes ? ` · ${session.planned_duration_minutes} min` : ''}`
@@ -255,7 +258,7 @@ export default function TodayPage({
                   <div className="grid grid-cols-2 gap-2">
                     <button onClick={() => onCompleteQuick(plan, session)} disabled={isDone}
                       className={`w-full flex items-center justify-center gap-2 py-2.5 bg-[#1a1a1a] border rounded-xl text-sm font-semibold transition-colors ${isDone ? 'border-[#22c55e]/40 text-[#22c55e]' : 'border-[#2e2e2e] text-[#a3a3a3] hover:border-[#22c55e]/50 hover:text-[#22c55e]'}`}>
-                      <Check size={15} />Feito
+                      <Check size={15} />{isDone ? 'Concluído' : 'Feito'}
                     </button>
                     <button onClick={() => onStart(plan, session)} disabled={isDone}
                       className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors ${isDone ? 'bg-[#1a1a1a] border border-[#2e2e2e] text-[#525252]' : 'bg-[#f97316] text-white hover:bg-[#ea6c0a]'}`}>
