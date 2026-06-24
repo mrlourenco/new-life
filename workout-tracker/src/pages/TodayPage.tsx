@@ -111,8 +111,8 @@ export default function TodayPage({
       const found = findSession(plans, id)
       return found ? { ...found, origIdx } : null
     })
-    .filter(Boolean)
-    .sort((a, b) => Number(doneSessionIds.has(a!.session.id)) - Number(doneSessionIds.has(b!.session.id))) as ({ plan: WorkoutPlan; session: WorkoutSession; origIdx: number })[]
+    .filter((item): item is { plan: WorkoutPlan; session: WorkoutSession; origIdx: number } => item !== null)
+    .sort((a, b) => Number(doneSessionIds.has(a.session.id)) - Number(doneSessionIds.has(b.session.id)))
 
   const getWeekStart = () => getWeekDates(today, weekStartDay)[0]
 
