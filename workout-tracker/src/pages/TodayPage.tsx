@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { Play, Zap, Pencil, Trash2, Clock, CheckCircle2, X, Dumbbell, Plus, Check } from 'lucide-react'
+import { Play, Zap, Pencil, Trash2, CheckCircle2, X, Dumbbell, Plus, Check } from 'lucide-react'
 import type { WorkoutPlan, WorkoutSession, ActiveWorkout, WorkoutLog, WorkoutWeekAssignment } from '../types/workout'
 import { activityTypeLabel, muscleLabel } from '../utils/labels'
-import { formatDurationSeconds } from '../utils/format'
 import { getDaySessionIds, findSession } from '../utils/workout'
 import { getWeekDates } from '../utils/dates'
 import WorkoutLogEditor from '../components/workout/WorkoutLogEditor'
@@ -112,7 +111,8 @@ export default function TodayPage({
       const found = findSession(plans, id)
       return found ? { ...found, origIdx } : null
     })
-    .filter(Boolean) as ({ plan: WorkoutPlan; session: WorkoutSession; origIdx: number })[]
+    .filter(Boolean)
+    .sort((a, b) => Number(doneSessionIds.has(a!.session.id)) - Number(doneSessionIds.has(b!.session.id))) as ({ plan: WorkoutPlan; session: WorkoutSession; origIdx: number })[]
 
   const getWeekStart = () => getWeekDates(today, weekStartDay)[0]
 
@@ -198,46 +198,14 @@ export default function TodayPage({
         </div>
       )}
 
-      {todayLogs.length > 0 && (
-        <div className="mb-6">
-          <p className="text-xs text-[#737373] uppercase tracking-wider font-semibold mb-3">Registado hoje</p>
-          <div className="space-y-2">
-            {todayLogs.map(log => {
-              const completedSets = log.exercises.reduce((n, e) => n + e.sets.filter(s => s.completed).length, 0)
-              const totalSets = log.exercises.reduce((n, e) => n + e.sets.length, 0)
-              const isActivity = log.kind === 'activity'
-              return (
-                <div key={log.id} className="bg-[#1a1a1a] rounded-2xl px-4 py-3">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle2 size={18} className="text-[#22c55e] flex-shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">{log.session_name}</p>
-                      <p className="text-[10px] text-[#525252] mt-0.5 flex items-center gap-2">
-                        <span>{isActivity ? activityTypeLabel(log.activity_type ?? 'other') : `${completedSets}/${totalSets} séries`}</span>
-                        {log.duration_seconds != null && (
-                          <span className="flex items-center gap-0.5"><Clock size={9} />{formatDurationSeconds(log.duration_seconds)}</span>
-                        )}
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-1 flex-shrink-0">
-                      <button onClick={() => setEditingLog(log)} className="p-1.5 text-[#525252] hover:text-[#f97316]"><Pencil size={14} /></button>
-                      <button onClick={() => { if (confirm('Apagar este treino?')) onDeleteLog(log.id) }} className="p-1.5 text-[#525252] hover:text-red-400"><Trash2 size={14} /></button>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
       {(scheduled.length > 0 || hasAdHoc) ? (
         <div className="mb-6">
-          <p className="text-xs text-[#737373] uppercase tracking-wider font-semibold mb-3">Planeado para hoje</p>
+          <p className="text-xs text-[#737373] uppercase tracking-wider font-semibold mb-3">Plano de hoje</p>
           <div className="space-y-3">
             {scheduled.map(({ plan, session, origIdx }) => {
               const isActivity = session.kind === 'activity'
-              const isDone = doneSessionIds.has(session.id)
+              const doneLog = todayLogs.find(log => log.session_id === session.id)
+              const isDone = !!doneLog
               return (
                 <div key={origIdx} className="bg-[#1a1a1a] rounded-2xl p-4">
                   <div className="flex items-start gap-2 mb-3">
@@ -260,10 +228,17 @@ export default function TodayPage({
                       className={`w-full flex items-center justify-center gap-2 py-2.5 bg-[#1a1a1a] border rounded-xl text-sm font-semibold transition-colors ${isDone ? 'border-[#22c55e]/40 text-[#22c55e]' : 'border-[#2e2e2e] text-[#a3a3a3] hover:border-[#22c55e]/50 hover:text-[#22c55e]'}`}>
                       <Check size={15} />{isDone ? 'Concluído' : 'Feito'}
                     </button>
-                    <button onClick={() => onStart(plan, session)} disabled={isDone}
-                      className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors ${isDone ? 'bg-[#1a1a1a] border border-[#2e2e2e] text-[#525252]' : 'bg-[#f97316] text-white hover:bg-[#ea6c0a]'}`}>
-                      <Play size={15} fill="currentColor" />Iniciar
-                    </button>
+                    {isDone ? (
+                      <button onClick={() => doneLog && onDeleteLog(doneLog.id)}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-[#1a1a1a] border border-[#2e2e2e] text-[#a3a3a3] hover:border-red-500/50 hover:text-red-400 transition-colors">
+                        <Trash2 size={15} />Desfazer
+                      </button>
+                    ) : (
+                      <button onClick={() => onStart(plan, session)}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#f97316] rounded-xl text-white text-sm font-semibold hover:bg-[#ea6c0a] transition-colors">
+                        <Play size={15} fill="currentColor" />Iniciar
+                      </button>
+                    )}
                   </div>
                 </div>
               )
