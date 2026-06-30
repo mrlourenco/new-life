@@ -13,17 +13,21 @@ a funcionar offline.
 - [x] Export/import completo (treino + nutrição + perfil) em Perfil → Dados
       (`src/utils/backup.ts`) — backup hoje, veículo de migração no primeiro login
 
-## Fase 1 — Backend single-user com sync (~1-2 semanas)
+## Fase 1 — Backend single-user com sync (~1-2 semanas) ✅
 
-- [ ] Projeto Supabase; schema Postgres espelhando `src/types/` (tabelas:
-      `workout_plans`, `workout_logs`, `meal_templates`, `nutrition_logs`,
-      `nutrition_plans`, `week_assignments`, `profiles`), todas com `user_id`
-      e row-level security "só o dono"
-- [ ] Auth opcional por magic link — sem login a app continua 100% local
-- [ ] Sync offline-first simples: localStorage é a fonte de leitura; push/pull
-      com last-write-wins por `updated_at`
-- [ ] Migração no primeiro login: upload do backup local
-- [ ] `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` como secrets do GitHub Actions;
+- [x] Projeto Supabase; schema Postgres espelhando `src/types/` (tabelas:
+      `workout_plans`, `workout_logs`, `workout_week_assignments`,
+      `meal_templates`, `nutrition_logs`, `nutrition_plans`,
+      `nutrition_week_assignments`, `profiles`), todas com `user_id`
+      e row-level security "só o dono" (`supabase/schema.sql`)
+- [x] Auth opcional por magic link (+ Google OAuth) — sem login a app
+      continua 100% local (`src/hooks/useAuth.ts`)
+- [x] Sync offline-first simples: localStorage é a fonte de leitura; push/pull
+      com last-write-wins por `updated_at`, incluindo propagação de deleções
+      (`src/lib/sync.ts`)
+- [x] Migração no primeiro login: `pullAll` seguido de `pushAll` do que
+      ainda não existe no remoto
+- [x] `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` como secrets do GitHub Actions;
       deploy continua no GitHub Pages
 
 Ganho imediato: dados sobrevivem ao browser e sincronizam entre dispositivos.

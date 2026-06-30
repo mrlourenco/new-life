@@ -28,6 +28,29 @@ function newer(a?: string, b?: string): boolean {
   return new Date(a).getTime() > new Date(b).getTime()
 }
 
+const PAGE_SIZE = 1000
+
+// Supabase caps unbounded selects at 1000 rows by default — page through
+// so collections that grow past that don't silently lose rows on pull.
+async function fetchAllRows(table: string, userId: string) {
+  const rows: { id: string; data: unknown; updated_at: string }[] = []
+  let from = 0
+  while (true) {
+    const { data, error } = await supabase
+      .from(table)
+      .select('id, data, updated_at')
+      .eq('user_id', userId)
+      .range(from, from + PAGE_SIZE - 1)
+
+    if (error) return { rows, error }
+    if (!data || data.length === 0) break
+    rows.push(...data)
+    if (data.length < PAGE_SIZE) break
+    from += PAGE_SIZE
+  }
+  return { rows, error: null }
+}
+
 function mergeEntities<T extends SyncEntity>(local: T[], remote: T[]): T[] {
   const map = new Map<string, T>()
   for (const e of local) map.set(e.id, e)
@@ -105,15 +128,11 @@ export async function pullAll(): Promise<boolean> {
   let changed = false
   try {
     for (const { key, table } of COLLECTIONS) {
-      const { data, error } = await supabase
-        .from(table)
-        .select('id, data, updated_at')
-        .eq('user_id', user.id)
+      const { rows, error } = await fetchAllRows(table, user.id)
 
       if (error) { console.error(`sync pull ${table}:`, error); continue }
-      if (!data) continue
 
-      const remote = data.map(row => ({ ...(row.data as SyncEntity), updated_at: row.updated_at }))
+      const remote = rows.map(row => ({ ...(row.data as SyncEntity), updated_at: row.updated_at }))
       const local = loadJSON<SyncEntity[]>(key) ?? []
       const merged = mergeEntities(local, remote)
       const mergedJSON = JSON.stringify(merged)
