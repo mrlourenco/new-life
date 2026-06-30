@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Search, ChevronRight } from 'lucide-react'
+import { X, Search, ChevronRight, Wifi, WifiOff } from 'lucide-react'
 import type { FoodItem } from '../../types/nutrition'
 import { searchFoods, calcMacros, type FoodEntry } from '../../data/foods'
+import { searchOpenFoodFacts, type OffProduct } from '../../lib/openFoodFacts'
 
 interface Props {
   onAdd: (food: FoodItem) => void
@@ -25,15 +26,43 @@ const EMPTY_MANUAL: ManualForm = {
   name: '', quantity: '', calories: '', protein_g: '', carbs_g: '', fat_g: '', fiber_g: '',
 }
 
+function offToFoodEntry(p: OffProduct): FoodEntry {
+  return {
+    id: `off-${p.code}`,
+    name: p.brand ? `${p.name} (${p.brand})` : p.name,
+    category: 'Open Food Facts',
+    per100g: p.per100g,
+    defaultPortionG: 100,
+    defaultPortionLabel: '100g',
+  }
+}
+
 export default function FoodPicker({ onAdd, onClose, initialMode = 'search' }: Props) {
   const [mode, setMode] = useState<Mode>(initialMode)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<FoodEntry | null>(null)
   const [grams, setGrams] = useState('')
   const [manual, setManual] = useState<ManualForm>(EMPTY_MANUAL)
+  const [offResults, setOffResults] = useState<OffProduct[]>([])
+  const [offLoading, setOffLoading] = useState(false)
+  const [offError, setOffError] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { searchRef.current?.focus() }, [])
+
+  useEffect(() => {
+    if (!query.trim()) return
+    const controller = new AbortController()
+    const timer = setTimeout(() => {
+      setOffLoading(true)
+      setOffError(false)
+      searchOpenFoodFacts(query, controller.signal)
+        .then(setOffResults)
+        .catch(err => { if (err.name !== 'AbortError') setOffError(true) })
+        .finally(() => setOffLoading(false))
+    }, 400)
+    return () => { clearTimeout(timer); controller.abort() }
+  }, [query])
 
   const results = searchFoods(query)
 
@@ -137,6 +166,43 @@ export default function FoodPicker({ onAdd, onClose, initialMode = 'search' }: P
                     <ChevronRight size={16} className="text-[#525252] flex-shrink-0 ml-2" />
                   </button>
                 ))}
+              </div>
+            )}
+
+            {query.trim() && (
+              <div className="mt-4">
+                <div className="flex items-center gap-1.5 mb-2">
+                  {offError ? <WifiOff size={12} className="text-[#525252]" /> : <Wifi size={12} className="text-[#525252]" />}
+                  <p className="text-[10px] text-[#525252] uppercase tracking-wider font-semibold">Open Food Facts</p>
+                </div>
+                {offLoading ? (
+                  <p className="text-center text-[#525252] text-sm py-4">A pesquisar...</p>
+                ) : offError ? (
+                  <p className="text-center text-[#525252] text-sm py-4">Sem ligação ao Open Food Facts</p>
+                ) : offResults.length === 0 ? (
+                  <p className="text-center text-[#525252] text-sm py-4">Sem resultados online</p>
+                ) : (
+                  <div className="space-y-1">
+                    {offResults.map(p => (
+                      <button
+                        key={p.code}
+                        onClick={() => handleSelectFood(offToFoodEntry(p))}
+                        className="w-full flex items-center justify-between px-3 py-3 bg-[#1a1a1a] rounded-xl text-left hover:bg-[#222]"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-white font-medium">{p.name}</p>
+                          <p className="text-[10px] text-[#525252] mt-0.5">
+                            {p.brand ? `${p.brand} · ` : ''}{Math.round(p.per100g.calories)} kcal/100g
+                            {' · '}P {Math.round(p.per100g.protein_g)}g
+                            {' · '}C {Math.round(p.per100g.carbs_g)}g
+                            {' · '}G {Math.round(p.per100g.fat_g)}g
+                          </p>
+                        </div>
+                        <ChevronRight size={16} className="text-[#525252] flex-shrink-0 ml-2" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

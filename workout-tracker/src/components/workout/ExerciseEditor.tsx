@@ -1,6 +1,8 @@
-import { Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { Trash2, Search } from 'lucide-react'
 import type { Exercise } from '../../types/workout'
 import { MUSCLES, EQUIPMENT, CARDIO_EQUIPMENT, CARDIO_EQUIPMENT_LABELS, isCardio, inputCls } from './planBuilderConstants'
+import ExercisePicker from './ExercisePicker'
 
 interface Props {
   exercise: Exercise
@@ -11,6 +13,8 @@ interface Props {
 }
 
 export default function ExerciseEditor({ exercise: ex, index: ei, canRemove, onUpdate, onRemove }: Props) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+
   return (
     <div className="bg-[#0f0f0f] rounded-xl p-3 space-y-3">
       <div className="flex items-center justify-between">
@@ -22,12 +26,31 @@ export default function ExerciseEditor({ exercise: ex, index: ei, canRemove, onU
         )}
       </div>
 
-      <input
-        value={ex.name}
-        onChange={e => onUpdate({ name: e.target.value })}
-        placeholder="Nome do exercício *"
-        className={inputCls}
-      />
+      {pickerOpen && (
+        <ExercisePicker
+          onSelect={entry => {
+            onUpdate({ name: entry.name, muscle: entry.muscle, equipment: entry.equipment })
+            setPickerOpen(false)
+          }}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+
+      <div className="flex gap-2">
+        <input
+          value={ex.name}
+          onChange={e => onUpdate({ name: e.target.value })}
+          placeholder="Nome do exercício *"
+          className={inputCls + ' flex-1'}
+        />
+        <button
+          onClick={() => setPickerOpen(true)}
+          title="Escolher do catálogo"
+          className="px-3 bg-[#1a1a1a] border border-[#2e2e2e] rounded-lg text-[#737373] hover:text-[#f97316] hover:border-[#f97316]/50 flex-shrink-0"
+        >
+          <Search size={15} />
+        </button>
+      </div>
 
       <div className="grid grid-cols-3 gap-2">
         <div>

@@ -13,7 +13,8 @@ export function useExerciseHistory(logs: WorkoutLog[]) {
     for (const log of logs) {
       for (const ex of log.exercises) {
         const key = ex.exercise_name.toLowerCase().trim()
-        if (!map.has(key)) {
+        const existing = map.get(key)
+        if (!existing || log.date > existing.date) {
           map.set(key, { date: log.date, sets: ex.sets.filter(s => s.completed) })
         }
       }
