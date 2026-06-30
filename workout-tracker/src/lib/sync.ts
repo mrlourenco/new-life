@@ -40,6 +40,7 @@ async function fetchAllRows(table: string, userId: string) {
       .from(table)
       .select('id, data, updated_at')
       .eq('user_id', userId)
+      .order('id', { ascending: true })
       .range(from, from + PAGE_SIZE - 1)
 
     if (error) return { rows, error }
