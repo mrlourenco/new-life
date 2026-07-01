@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Check, X, Trophy, Clock, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import type { ActiveWorkout, SetLog, Exercise } from '../types/workout'
 import { useRestTimer } from '../hooks/useRestTimer'
@@ -6,6 +6,7 @@ import RestTimerOverlay from './RestTimerOverlay'
 import { muscleLabel, equipmentLabel } from '../utils/labels'
 import { formatElapsedSince } from '../utils/format'
 import type { ExerciseHistory } from '../hooks/useStore'
+import { EXERCISES, gifUrl } from '../data/exercises'
 import ExerciseNav from './workout/ExerciseNav'
 import ExerciseHistoryCard from './workout/ExerciseHistoryCard'
 import ExerciseEditor from './workout/ExerciseEditor'
@@ -38,6 +39,10 @@ export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscar
   const exLog = active.log.exercises[active.current_exercise_index]
   const ex = active.session.exercises[active.current_exercise_index]
   const totalEx = active.session.exercises.length
+  const catalogGif = useMemo(
+    () => EXERCISES.find(e => e.name === ex.name)?.gif,
+    [ex.name]
+  )
 
   const updateSet = useCallback((setIdx: number, field: keyof SetLog, value: number | boolean | string) => {
     const updated: ActiveWorkout = JSON.parse(JSON.stringify(active))
@@ -235,6 +240,14 @@ export default function ActiveWorkoutView({ active, onUpdate, onFinish, onDiscar
       {/* Main exercise */}
       <div className="flex-1 overflow-y-auto px-4 pb-8">
         <div className="mt-3 mb-4">
+          {catalogGif && (
+            <img
+              src={gifUrl(catalogGif)}
+              alt=""
+              onError={e => { e.currentTarget.style.display = 'none' }}
+              className="w-full h-48 object-cover rounded-xl mb-3 bg-[#1a1a1a]"
+            />
+          )}
           <div className="flex items-center justify-between">
             <div className="min-w-0">
               <h2 className="text-xl font-bold text-white truncate">{ex.name}</h2>

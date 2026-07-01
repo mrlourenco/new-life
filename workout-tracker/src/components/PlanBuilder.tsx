@@ -28,7 +28,6 @@ export default function PlanBuilder({ onSave, onCancel }: Props) {
   const [step, setStep] = useState<Step>('plan')
   const [name, setName] = useState('')
   const [goal, setGoal] = useState<WorkoutPlan['goal']>('hypertrophy')
-  const [description, setDescription] = useState('')
   const [sessions, setSessions] = useState<WorkoutSession[]>([emptySession()])
   const [expandedSession, setExpandedSession] = useState<string>(sessions[0].id)
   const [errors, setErrors] = useState<string[]>([])
@@ -64,14 +63,6 @@ export default function PlanBuilder({ onSave, onCancel }: Props) {
       sess.id === sessId ? { ...sess, exercises: sess.exercises.filter(e => e.id !== exId) } : sess
     ))
 
-  /* ── Muscle group toggle ─────────────────────── */
-  const toggleMuscle = (sessId: string, muscle: string) =>
-    setSessions(s => s.map(sess => {
-      if (sess.id !== sessId) return sess
-      const has = sess.muscle_groups.includes(muscle)
-      return { ...sess, muscle_groups: has ? sess.muscle_groups.filter(m => m !== muscle) : [...sess.muscle_groups, muscle] }
-    }))
-
   /* ── Validation & save ───────────────────────── */
   const validate = () => {
     const errs: string[] = []
@@ -88,13 +79,16 @@ export default function PlanBuilder({ onSave, onCancel }: Props) {
   const handleSave = () => {
     const errs = validate()
     if (errs.length) { setErrors(errs); return }
+    const sessionsWithMuscles = sessions.map(sess => ({
+      ...sess,
+      muscle_groups: [...new Set(sess.exercises.map(e => e.muscle).filter(m => m !== 'other'))],
+    }))
     const plan: WorkoutPlan = {
       id: uid(),
       name: name.trim(),
       goal,
-      description: description.trim() || undefined,
       days_per_week: sessions.length,
-      sessions,
+      sessions: sessionsWithMuscles,
     }
     onSave(plan)
   }
@@ -159,16 +153,6 @@ export default function PlanBuilder({ onSave, onCancel }: Props) {
               </div>
             </Field>
 
-            <Field label="Descrição (opcional)">
-              <textarea
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                rows={3}
-                placeholder="Notas sobre o plano..."
-                className={inputCls + ' resize-none'}
-              />
-            </Field>
-
             <button
               onClick={() => { setErrors([]); setStep('sessions') }}
               className="w-full py-3 bg-[#f97316] rounded-xl text-white font-semibold mt-2"
@@ -191,7 +175,6 @@ export default function PlanBuilder({ onSave, onCancel }: Props) {
                 onToggleExpand={() => setExpandedSession(expandedSession === sess.id ? '' : sess.id)}
                 onRemove={() => removeSession(sess.id)}
                 onUpdate={patch => updateSession(sess.id, patch)}
-                onToggleMuscle={muscle => toggleMuscle(sess.id, muscle)}
                 onUpdateExercise={(exId, patch) => updateExercise(sess.id, exId, patch)}
                 onRemoveExercise={exId => removeExercise(sess.id, exId)}
                 onAddExercise={() => addExercise(sess.id)}

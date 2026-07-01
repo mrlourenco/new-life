@@ -1,8 +1,8 @@
-import { Plus, Trash2, ChevronDown, ChevronUp, Check } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import type { WorkoutSession, Exercise } from '../../types/workout'
 import Field from './Field'
 import ExerciseEditor from './ExerciseEditor'
-import { MUSCLES, DAYS, inputCls } from './planBuilderConstants'
+import { DAYS, inputCls } from './planBuilderConstants'
 
 interface Props {
   session: WorkoutSession
@@ -12,7 +12,6 @@ interface Props {
   onToggleExpand: () => void
   onRemove: () => void
   onUpdate: (patch: Partial<WorkoutSession>) => void
-  onToggleMuscle: (muscle: string) => void
   onUpdateExercise: (exId: string, patch: Partial<Exercise>) => void
   onRemoveExercise: (exId: string) => void
   onAddExercise: () => void
@@ -26,7 +25,6 @@ export default function SessionEditor({
   onToggleExpand,
   onRemove,
   onUpdate,
-  onToggleMuscle,
   onUpdateExercise,
   onRemoveExercise,
   onAddExercise,
@@ -70,23 +68,6 @@ export default function SessionEditor({
                   {d.slice(0, 3)}
                 </button>
               ))}
-            </div>
-          </Field>
-
-          <Field label="Grupos musculares">
-            <div className="flex flex-wrap gap-1.5">
-              {MUSCLES.map(m => {
-                const active = sess.muscle_groups.includes(m)
-                return (
-                  <button
-                    key={m}
-                    onClick={() => onToggleMuscle(m)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors capitalize ${active ? 'bg-[#f97316]/20 text-[#f97316] border border-[#f97316]/40' : 'bg-[#0f0f0f] text-[#737373] border border-[#2e2e2e]'}`}
-                  >
-                    {active && <Check size={10} className="inline mr-1" />}{m}
-                  </button>
-                )
-              })}
             </div>
           </Field>
 

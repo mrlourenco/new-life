@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Trash2, Search } from 'lucide-react'
 import type { Exercise } from '../../types/workout'
-import { MUSCLES, EQUIPMENT, CARDIO_EQUIPMENT, CARDIO_EQUIPMENT_LABELS, isCardio, inputCls } from './planBuilderConstants'
+import { inputCls } from './planBuilderConstants'
 import ExercisePicker from './ExercisePicker'
 
 interface Props {
@@ -67,41 +67,6 @@ export default function ExerciseEditor({ exercise: ex, index: ei, canRemove, onU
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <p className="text-[10px] text-[#737373] mb-1">Tipo</p>
-          <select
-            value={ex.muscle}
-            onChange={e => {
-              const muscle = e.target.value
-              const defaultEq = isCardio(muscle) ? 'none' : 'barbell'
-              onUpdate({ muscle, equipment: defaultEq })
-            }}
-            className={inputCls}
-          >
-            {MUSCLES.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </div>
-        <div>
-          <p className="text-[10px] text-[#737373] mb-1">Equipamento</p>
-          {isCardio(ex.muscle) ? (
-            <select value={ex.equipment} onChange={e => onUpdate({ equipment: e.target.value })} className={inputCls}>
-              {CARDIO_EQUIPMENT.map(eq => <option key={eq} value={eq}>{CARDIO_EQUIPMENT_LABELS[eq]}</option>)}
-            </select>
-          ) : (
-            <select value={ex.equipment} onChange={e => onUpdate({ equipment: e.target.value })} className={inputCls}>
-              {EQUIPMENT.map(eq => <option key={eq} value={eq}>{eq}</option>)}
-            </select>
-          )}
-        </div>
-      </div>
-
-      <input
-        value={ex.notes ?? ''}
-        onChange={e => onUpdate({ notes: e.target.value || undefined })}
-        placeholder="Notas técnicas (opcional)"
-        className={inputCls}
-      />
       <input
         value={ex.weight_suggestion ?? ''}
         onChange={e => onUpdate({ weight_suggestion: e.target.value || undefined })}
