@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { X, Search } from 'lucide-react'
-import { searchExercises, type ExerciseEntry } from '../../data/exercises'
+import { searchExercises, gifUrl, type ExerciseEntry } from '../../data/exercises'
 import { MUSCLES } from './planBuilderConstants'
 
 interface Props {
@@ -68,8 +68,18 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
               <button
                 key={ex.id}
                 onClick={() => onSelect(ex)}
-                className="w-full flex items-center justify-between px-3 py-3 bg-[#1a1a1a] rounded-xl text-left hover:bg-[#222]"
+                className="w-full flex items-center gap-3 px-3 py-2.5 bg-[#1a1a1a] rounded-xl text-left hover:bg-[#222]"
               >
+                {ex.gif ? (
+                  <img
+                    src={gifUrl(ex.gif)}
+                    alt=""
+                    loading="lazy"
+                    className="w-12 h-12 rounded-lg object-cover flex-shrink-0 bg-[#0f0f0f]"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg flex-shrink-0 bg-[#0f0f0f]" />
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-white font-medium">{ex.name}</p>
                   <p className="text-[10px] text-[#525252] mt-0.5 capitalize">{ex.muscle} · {ex.equipment}</p>
