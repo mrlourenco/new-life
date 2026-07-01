@@ -79,12 +79,16 @@ export default function PlanBuilder({ onSave, onCancel }: Props) {
   const handleSave = () => {
     const errs = validate()
     if (errs.length) { setErrors(errs); return }
+    const sessionsWithMuscles = sessions.map(sess => ({
+      ...sess,
+      muscle_groups: [...new Set(sess.exercises.map(e => e.muscle).filter(m => m !== 'other'))],
+    }))
     const plan: WorkoutPlan = {
       id: uid(),
       name: name.trim(),
       goal,
       days_per_week: sessions.length,
-      sessions,
+      sessions: sessionsWithMuscles,
     }
     onSave(plan)
   }

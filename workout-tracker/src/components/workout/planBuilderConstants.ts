@@ -18,7 +18,6 @@ export const CARDIO_EQUIPMENT_LABELS: Record<string, string> = {
   other: 'Outro',
 }
 
-export function isCardio(muscle: string) { return muscle === 'cardio' }
 export const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
 export const inputCls = 'w-full bg-[#1a1a1a] border border-[#2e2e2e] rounded-lg px-3 py-2 text-sm text-white focus:border-[#f97316] focus:outline-none placeholder:text-[#525252]'
