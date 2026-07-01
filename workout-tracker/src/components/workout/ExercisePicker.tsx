@@ -75,6 +75,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
                     src={gifUrl(ex.gif)}
                     alt=""
                     loading="lazy"
+                    onError={e => { e.currentTarget.style.display = 'none' }}
                     className="w-12 h-12 rounded-lg object-cover flex-shrink-0 bg-[#0f0f0f]"
                   />
                 ) : (

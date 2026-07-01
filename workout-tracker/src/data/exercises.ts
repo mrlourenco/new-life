@@ -91,7 +91,7 @@ export const EXERCISES: ExerciseEntry[] = [
   { id: 'elevacao-lateral-cabo', name: 'Elevação lateral (cabo)', muscle: 'shoulders', equipment: 'cable' },
   { id: 'elevacao-frontal', name: 'Elevação frontal (halteres)', muscle: 'shoulders', equipment: 'dumbbells', gif: 'Dumbbell_Front_Raise' },
   { id: 'remada-alta', name: 'Remada alta (barra)', muscle: 'shoulders', equipment: 'barbell', gif: 'Barbell_Upright_Row' },
-  { id: 'crucifixo-invertido', name: 'Crucifixo invertido (halteres)', muscle: 'shoulders', equipment: 'dumbbells', gif: 'Barbell_Rear_Delt_Row' },
+  { id: 'crucifixo-invertido', name: 'Crucifixo invertido (halteres)', muscle: 'shoulders', equipment: 'dumbbells' },
   { id: 'face-pull', name: 'Face pull (cabo)', muscle: 'shoulders', equipment: 'cable', gif: 'Face_Pull' },
   { id: 'encolhimento-trapezio', name: 'Encolhimento de trapézio (halteres)', muscle: 'shoulders', equipment: 'dumbbells', gif: 'Dumbbell_Shrug' },
   { id: 'desenvolvimento-arnold', name: 'Desenvolvimento Arnold (halteres)', muscle: 'shoulders', equipment: 'dumbbells', gif: 'Arnold_Dumbbell_Press' },
@@ -110,7 +110,7 @@ export const EXERCISES: ExerciseEntry[] = [
   { id: 'rosca-martelo', name: 'Rosca martelo (halteres)', muscle: 'biceps', equipment: 'dumbbells', gif: 'Hammer_Curls' },
   { id: 'rosca-concentrada', name: 'Rosca concentrada (halter)', muscle: 'biceps', equipment: 'dumbbells', gif: 'Concentration_Curls' },
   { id: 'rosca-cabo', name: 'Rosca no cabo', muscle: 'biceps', equipment: 'cable', gif: 'Cable_Hammer_Curls_-_Rope_Attachment' },
-  { id: 'rosca-scott', name: 'Rosca scott (barra W)', muscle: 'biceps', equipment: 'barbell', gif: 'Cable_Preacher_Curl' },
+  { id: 'rosca-scott', name: 'Rosca scott (barra W)', muscle: 'biceps', equipment: 'barbell' },
   { id: 'rosca-barra-ez', name: 'Rosca direta (barra EZ)', muscle: 'biceps', equipment: 'barbell', gif: 'EZ-Bar_Curl' },
   { id: 'rosca-martelo-cabo', name: 'Rosca martelo no cabo (corda)', muscle: 'biceps', equipment: 'cable' },
   { id: 'rosca-spider', name: 'Rosca spider (banco inclinado)', muscle: 'biceps', equipment: 'barbell' },
@@ -121,12 +121,12 @@ export const EXERCISES: ExerciseEntry[] = [
 
   // Tríceps
   { id: 'triceps-corda', name: 'Tríceps na corda (cabo)', muscle: 'triceps', equipment: 'cable', gif: 'Triceps_Pushdown' },
-  { id: 'triceps-barra-cabo', name: 'Tríceps na barra (cabo)', muscle: 'triceps', equipment: 'cable', gif: 'Triceps_Pushdown_-_V-Bar_Attachment' },
+  { id: 'triceps-barra-cabo', name: 'Tríceps na barra (cabo)', muscle: 'triceps', equipment: 'cable', gif: 'Triceps_Pushdown' },
   { id: 'triceps-testa', name: 'Tríceps testa (barra)', muscle: 'triceps', equipment: 'barbell', gif: 'EZ-Bar_Skullcrusher' },
   { id: 'triceps-frances', name: 'Tríceps francês (halter)', muscle: 'triceps', equipment: 'dumbbells', gif: 'Dumbbell_One-Arm_Triceps_Extension' },
   { id: 'mergulho-banco', name: 'Mergulho no banco', muscle: 'triceps', equipment: 'bodyweight', gif: 'Dips_-_Triceps_Version' },
   { id: 'paralelas-triceps', name: 'Paralelas (foco tríceps)', muscle: 'triceps', equipment: 'bodyweight', gif: 'Parallel_Bar_Dip' },
-  { id: 'triceps-coice', name: 'Tríceps coice (halter)', muscle: 'triceps', equipment: 'dumbbells', gif: 'Dumbbell_One-Arm_Triceps_Extension' },
+  { id: 'triceps-coice', name: 'Tríceps coice (halter)', muscle: 'triceps', equipment: 'dumbbells' },
   { id: 'supino-pegada-fechada', name: 'Supino pegada fechada (barra)', muscle: 'triceps', equipment: 'barbell', gif: 'Close-Grip_Barbell_Bench_Press' },
   { id: 'mergulho-maquina', name: 'Mergulho na máquina', muscle: 'triceps', equipment: 'machine' },
   { id: 'triceps-cabo-barra-v', name: 'Tríceps no cabo (barra V)', muscle: 'triceps', equipment: 'cable', gif: 'Triceps_Pushdown_-_V-Bar_Attachment' },
@@ -175,7 +175,7 @@ export const EXERCISES: ExerciseEntry[] = [
 ]
 
 function normalize(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
 export function searchExercises(query: string, muscle?: string | null): ExerciseEntry[] {
