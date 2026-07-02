@@ -8,6 +8,7 @@ import { GOALS, inputCls } from './workout/planBuilderConstants'
 interface Props {
   onSave: (plan: WorkoutPlan) => void
   onCancel: () => void
+  initialPlan?: WorkoutPlan
 }
 
 function uid() {
@@ -24,11 +25,11 @@ function emptySession(): WorkoutSession {
 
 type Step = 'plan' | 'sessions'
 
-export default function PlanBuilder({ onSave, onCancel }: Props) {
-  const [step, setStep] = useState<Step>('plan')
-  const [name, setName] = useState('')
-  const [goal, setGoal] = useState<WorkoutPlan['goal']>('hypertrophy')
-  const [sessions, setSessions] = useState<WorkoutSession[]>([emptySession()])
+export default function PlanBuilder({ onSave, onCancel, initialPlan }: Props) {
+  const [step, setStep] = useState<Step>(initialPlan ? 'sessions' : 'plan')
+  const [name, setName] = useState(initialPlan?.name ?? '')
+  const [goal, setGoal] = useState<WorkoutPlan['goal']>(initialPlan?.goal ?? 'hypertrophy')
+  const [sessions, setSessions] = useState<WorkoutSession[]>(initialPlan?.sessions ?? [emptySession()])
   const [expandedSession, setExpandedSession] = useState<string>(sessions[0].id)
   const [errors, setErrors] = useState<string[]>([])
 
@@ -98,7 +99,7 @@ export default function PlanBuilder({ onSave, onCancel }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-12 pb-3 border-b border-[#1a1a1a]">
         <button onClick={onCancel} className="p-2 -ml-2 text-[#737373]"><X size={20} /></button>
-        <h1 className="font-semibold text-white">Criar plano</h1>
+        <h1 className="font-semibold text-white">{initialPlan ? 'Rever plano gerado' : 'Criar plano'}</h1>
         <button
           onClick={handleSave}
           className="px-3 py-1.5 rounded-lg bg-[#f97316] text-white text-xs font-semibold"

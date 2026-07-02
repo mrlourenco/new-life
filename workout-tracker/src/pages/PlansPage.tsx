@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { Sparkles, Plus } from 'lucide-react'
 import type { WorkoutPlan } from '../types/workout'
 import PlanBuilder from '../components/PlanBuilder'
 import PlanImportSection from '../components/workout/PlanImportSection'
 import PlanCard from '../components/workout/PlanCard'
+import AIPlanGenerator from '../components/AIPlanGenerator'
 
 interface Props {
   plans: WorkoutPlan[]
@@ -10,15 +12,37 @@ interface Props {
   onDelete: (id: string) => void
 }
 
+type Mode = 'list' | 'builder' | 'ai-generator' | 'ai-review'
+
 export default function PlansPage({ plans, onAdd, onDelete }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [showBuilder, setShowBuilder] = useState(false)
+  const [mode, setMode] = useState<Mode>('list')
+  const [generatedPlan, setGeneratedPlan] = useState<WorkoutPlan | null>(null)
 
-  if (showBuilder) {
+  if (mode === 'builder') {
     return (
       <PlanBuilder
-        onSave={plan => { onAdd(plan); setShowBuilder(false) }}
-        onCancel={() => setShowBuilder(false)}
+        onSave={plan => { onAdd(plan); setMode('list') }}
+        onCancel={() => setMode('list')}
+      />
+    )
+  }
+
+  if (mode === 'ai-generator') {
+    return (
+      <AIPlanGenerator
+        onGenerated={plan => { setGeneratedPlan(plan); setMode('ai-review') }}
+        onClose={() => setMode('list')}
+      />
+    )
+  }
+
+  if (mode === 'ai-review' && generatedPlan) {
+    return (
+      <PlanBuilder
+        initialPlan={generatedPlan}
+        onSave={plan => { onAdd(plan); setMode('list'); setGeneratedPlan(null) }}
+        onCancel={() => setMode('list')}
       />
     )
   }
@@ -29,11 +53,27 @@ export default function PlansPage({ plans, onAdd, onDelete }: Props) {
         <h1 className="text-2xl font-bold text-white">Planos</h1>
       </div>
 
-      <PlanImportSection onAdd={onAdd} onCreateClick={() => setShowBuilder(true)} />
+      <div className="flex gap-2 mb-5">
+        <button
+          onClick={() => setMode('builder')}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl text-sm text-[#a3a3a3] hover:border-[#f97316]/50 hover:text-white transition-colors"
+        >
+          <Plus size={15} />
+          Novo plano
+        </button>
+        <button
+          onClick={() => setMode('ai-generator')}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#f97316]/10 border border-[#f97316]/30 rounded-xl text-sm text-[#f97316] hover:bg-[#f97316]/20 transition-colors"
+        >
+          <Sparkles size={15} />
+          Gerar com IA
+        </button>
+      </div>
 
-      {/* Plans list */}
+      <PlanImportSection onAdd={onAdd} onCreateClick={() => setMode('builder')} />
+
       {plans.length === 0 ? (
-        <p className="text-center text-[#525252] text-sm py-8">Sem planos importados</p>
+        <p className="text-center text-[#525252] text-sm py-8">Sem planos — cria um ou gera com IA</p>
       ) : (
         <div className="space-y-3">
           {plans.map(plan => (
